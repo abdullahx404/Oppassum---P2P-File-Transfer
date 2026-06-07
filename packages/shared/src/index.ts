@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const MAX_SIGNAL_PAYLOAD_BYTES = 64 * 1024;
+
 export const CLIENT_EVENTS = {
   ROOM_JOIN: "room:join",
   ROOM_LEAVE: "room:leave",
@@ -61,12 +63,19 @@ export const eventErrorSchema = z.object({
 
 export const signalTypeSchema = z.enum(["offer", "answer", "ice-candidate"]);
 
+const signalPayloadSchema = z
+  .unknown()
+  .refine((payload) => !isBinaryPayload(payload), "Binary signal payloads are not allowed.")
+  .refine((payload) => getJsonByteLength(payload) <= MAX_SIGNAL_PAYLOAD_BYTES, {
+    message: "Signal payload is too large."
+  });
+
 export const signalMessageSchema = z.object({
   roomId: roomIdSchema,
   fromPeerId: z.string().min(8).max(64),
   toPeerId: z.string().min(8).max(64),
   type: signalTypeSchema,
-  payload: z.unknown()
+  payload: signalPayloadSchema
 });
 
 export type DeviceType = z.infer<typeof deviceTypeSchema>;
@@ -79,3 +88,27 @@ export type RoomJoinPayload = z.infer<typeof roomJoinSchema>;
 export type RoomLeavePayload = z.infer<typeof roomLeaveSchema>;
 export type SignalMessage = z.infer<typeof signalMessageSchema>;
 export type SignalType = z.infer<typeof signalTypeSchema>;
+
+function getJsonByteLength(payload: unknown): number {
+  try {
+    return new TextEncoder().encode(JSON.stringify(payload)).byteLength;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+function isBinaryPayload(payload: unknown): boolean {
+  if (
+    payload instanceof ArrayBuffer ||
+    payload instanceof Blob ||
+    ArrayBuffer.isView(payload)
+  ) {
+    return true;
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  return Object.values(payload).some((value) => isBinaryPayload(value));
+}

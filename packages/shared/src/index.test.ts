@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { CLIENT_EVENTS, roomJoinSchema, roomJoinedSchema } from "./index.js";
+import {
+  CLIENT_EVENTS,
+  MAX_SIGNAL_PAYLOAD_BYTES,
+  roomJoinSchema,
+  roomJoinedSchema,
+  signalMessageSchema
+} from "./index.js";
 
 describe("shared foundation", () => {
   it("defines stable room join event names", () => {
@@ -34,5 +40,29 @@ describe("shared foundation", () => {
         peers: [peer]
       }).success
     ).toBe(true);
+  });
+
+  it("rejects oversized signaling payloads", () => {
+    expect(
+      signalMessageSchema.safeParse({
+        roomId: "study-room",
+        fromPeerId: "peer-123456",
+        toPeerId: "peer-654321",
+        type: "offer",
+        payload: { sdp: "x".repeat(MAX_SIGNAL_PAYLOAD_BYTES + 1), type: "offer" }
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects binary signaling payloads so file bytes stay off the server", () => {
+    expect(
+      signalMessageSchema.safeParse({
+        roomId: "study-room",
+        fromPeerId: "peer-123456",
+        toPeerId: "peer-654321",
+        type: "offer",
+        payload: { chunk: new Uint8Array([1, 2, 3]) }
+      }).success
+    ).toBe(false);
   });
 });

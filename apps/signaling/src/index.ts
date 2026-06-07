@@ -7,6 +7,8 @@ import { getConfig } from "./config.js";
 import { createHealthPayload } from "./health.js";
 import { registerSocketHandlers } from "./socket-server.js";
 
+const MAX_SIGNAL_PAYLOAD_BYTES = 64 * 1024;
+
 const config = getConfig();
 const app = express();
 
@@ -23,6 +25,7 @@ app.get("/health", (_request, response) => {
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
+  maxHttpBufferSize: MAX_SIGNAL_PAYLOAD_BYTES * 2,
   cors: {
     origin: config.clientOrigins,
     methods: ["GET", "POST"]

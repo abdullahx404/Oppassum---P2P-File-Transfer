@@ -4,12 +4,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it } from "vitest";
 
+import { TransferDialog } from "./TransferDialog";
 import { TransferSurface, previewRoomState } from "./TransferSurface";
 import { createFallbackRoomState } from "../hooks/useSocketRoom";
 
 describe("TransferSurface", () => {
   it("renders the required static upload shell", () => {
-    render(<TransferSurface roomState={previewRoomState} />);
+    render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
     expect(screen.getByLabelText("Oppassum home")).toBeInTheDocument();
     expect(screen.getByLabelText("Information")).toBeInTheDocument();
@@ -20,7 +21,7 @@ describe("TransferSurface", () => {
   });
 
   it("shows mock peers and transfer states for Phase 2", () => {
-    render(<TransferSurface roomState={previewRoomState} />);
+    render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
     expect(screen.getByRole("button", { name: "Studio Laptop, Ready" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Amina Phone, Ready" })).toBeInTheDocument();
@@ -32,7 +33,7 @@ describe("TransferSurface", () => {
   });
 
   it("renders progress and incoming transfer previews", () => {
-    render(<TransferSurface roomState={previewRoomState} />);
+    render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
     expect(screen.getByRole("progressbar", { name: "Sending portfolio.zip" })).toHaveAttribute(
       "aria-valuenow",
@@ -49,20 +50,26 @@ describe("TransferSurface", () => {
 
   it("shows connecting, empty, and peer list states from room discovery", () => {
     const { rerender } = render(
-      <TransferSurface roomState={createFallbackRoomState({ status: "connecting", peers: [] })} />
+      React.createElement(TransferSurface, {
+        roomState: createFallbackRoomState({ status: "connecting", peers: [] })
+      })
     );
 
     expect(screen.getByText("Connecting to nearby devices...")).toBeInTheDocument();
 
-    rerender(<TransferSurface roomState={createFallbackRoomState({ status: "connected", peers: [] })} />);
+    rerender(
+      React.createElement(TransferSurface, {
+        roomState: createFallbackRoomState({ status: "connected", peers: [] })
+      })
+    );
     expect(screen.getByText("No devices connected yet")).toBeInTheDocument();
 
-    rerender(<TransferSurface roomState={previewRoomState} />);
+    rerender(React.createElement(TransferSurface, { roomState: previewRoomState }));
     expect(screen.getByText("4 devices connected")).toBeInTheDocument();
   });
 
   it("shows selected file manifest metadata", () => {
-    render(<TransferSurface roomState={previewRoomState} />);
+    render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
     const input = screen.getByLabelText("Choose files");
     const file = new File(["hello"], "hello.txt", { type: "text/plain" });
@@ -76,5 +83,56 @@ describe("TransferSurface", () => {
     expect(screen.getByLabelText("Selected file manifest")).toBeInTheDocument();
     expect(screen.getByText("1 file selected")).toBeInTheDocument();
     expect(screen.getByText("5 B ready for manifest approval")).toBeInTheDocument();
+  });
+
+  it("renders user-controlled names as text without executing markup", () => {
+    const testWindow = window as Window & { __oppassumXss?: number };
+    testWindow.__oppassumXss = undefined;
+    render(
+      React.createElement(TransferSurface, {
+        roomState: createFallbackRoomState({
+          peers: [
+            {
+              peerId: "peer-xss-test",
+              displayName: "<img src=x onerror=window.__oppassumXss=1>",
+              deviceType: "laptop"
+            }
+          ]
+        })
+      })
+    );
+
+    const input = screen.getByLabelText("Choose files");
+    const file = new File(["safe"], "<script>window.__oppassumXss=1</script>.txt", {
+      type: "text/plain"
+    });
+
+    fireEvent.change(input, {
+      target: {
+        files: [file]
+      }
+    });
+    render(
+      React.createElement(TransferDialog, {
+        manifest: {
+          transferId: "transfer-xss",
+          files: [
+            {
+              id: "file-xss",
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              lastModified: file.lastModified
+            }
+          ],
+          totalBytes: file.size,
+          createdAt: Date.now()
+        }
+      })
+    );
+
+    expect(screen.getByText("<img src=x onerror=window.__oppassumXss=1>")).toBeInTheDocument();
+    expect(screen.getByText("<script>window.__oppassumXss=1</script>.txt")).toBeInTheDocument();
+    expect(testWindow.__oppassumXss).toBeUndefined();
   });
 });

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { io as createClient, type Socket as ClientSocket } from "socket.io-client";
 import { Server } from "socket.io";
 
+import type { RateLimitConfig } from "./rate-limiter.js";
 import { registerSocketHandlers } from "./socket-server.js";
 
 type TestServer = {
@@ -27,7 +28,7 @@ function waitFor<T>(socket: ClientSocket, event: string): Promise<T> {
   });
 }
 
-async function createTestServer(): Promise<TestServer> {
+async function createTestServer(rateLimit?: RateLimitConfig): Promise<TestServer> {
   const httpServer = createServer();
   const ioServer = new Server(httpServer, {
     cors: {
@@ -35,7 +36,7 @@ async function createTestServer(): Promise<TestServer> {
     }
   });
 
-  registerSocketHandlers(ioServer);
+  registerSocketHandlers(ioServer, undefined, rateLimit ? { rateLimit } : undefined);
 
   await new Promise<void>((resolve) => {
     httpServer.listen(0, resolve);
@@ -191,5 +192,51 @@ describe("socket room discovery", () => {
     await expect(waitFor<{ code: string }>(first, SERVER_EVENTS.EVENT_ERROR)).resolves.toMatchObject({
       code: "peer_spoofing_blocked"
     });
+  });
+
+  it("rejects oversized signaling payloads", async () => {
+    const first = connectClient(server.port);
+    const second = connectClient(server.port);
+    clients.push(first, second);
+
+    first.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-a000") });
+    second.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-b000") });
+    await waitFor(first, SERVER_EVENTS.ROOM_JOINED);
+    await waitFor(second, SERVER_EVENTS.ROOM_JOINED);
+
+    const errorPromise = waitFor<{ code: string }>(first, SERVER_EVENTS.EVENT_ERROR);
+
+    first.emit(CLIENT_EVENTS.PEER_SIGNAL, {
+      roomId: "study",
+      fromPeerId: "peer-a000",
+      toPeerId: "peer-b000",
+      type: "offer",
+      payload: { sdp: "x".repeat(70_000), type: "offer" }
+    });
+
+    await expect(errorPromise).resolves.toMatchObject({
+      code: "invalid_signal"
+    });
+  });
+
+  it("rate limits excessive signaling events", async () => {
+    await server.close();
+    server = await createTestServer({ windowMs: 10_000, maxEvents: 2, maxInvalidEvents: 10 });
+    const client = connectClient(server.port);
+    clients.push(client);
+
+    const errors: Array<{ code: string }> = [];
+    client.on(SERVER_EVENTS.EVENT_ERROR, (payload: { code: string }) => {
+      errors.push(payload);
+    });
+
+    client.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-a000") });
+    await waitFor(client, SERVER_EVENTS.ROOM_JOINED);
+    client.emit(CLIENT_EVENTS.ROOM_LEAVE, { roomId: "study" });
+    client.emit(CLIENT_EVENTS.ROOM_LEAVE, { roomId: "study" });
+
+    await expect
+      .poll(() => errors.some((error) => error.code === "rate_limited"))
+      .toBe(true);
   });
 });
