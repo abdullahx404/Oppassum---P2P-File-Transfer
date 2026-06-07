@@ -1,7 +1,7 @@
 "use client";
 
 import type { DeviceType } from "@oppassum/shared";
-import { Download, Info, Radio } from "lucide-react";
+import { AlertTriangle, Download, Info, Radio, RotateCcw } from "lucide-react";
 import React from "react";
 
 import { BrandMark } from "./BrandMark";
@@ -15,6 +15,11 @@ import { useWebRtcPeer, type PeerConnectionStatus } from "../hooks/useWebRtcPeer
 import { createFallbackRoomState, useSocketRoom, type SocketRoomState } from "../hooks/useSocketRoom";
 import { getTransferPercent } from "../lib/chunked-transfer";
 import { formatBytes } from "../lib/files";
+import {
+  getBrowserSupportState,
+  getLargeTransferWarning,
+  getProgressDetail
+} from "../lib/transfer-health";
 
 type TransferSurfaceProps = {
   roomState?: SocketRoomState;
@@ -32,6 +37,10 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const currentRoom = roomState ?? liveRoomState;
   const peerConnection = useWebRtcPeer(currentRoom);
   const fileTransfer = useFileTransfer();
+  const browserSupport = getBrowserSupportState();
+  const largeTransferWarning = fileTransfer.manifest
+    ? getLargeTransferWarning(fileTransfer.manifest.totalBytes)
+    : undefined;
   const peerCount = currentRoom.peers.length;
   const roomStatusText = getRoomStatusText(currentRoom);
   const connectionStatusText = getConnectionStatusText(
@@ -101,6 +110,37 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             >
               {connectionStatusText}
             </p>
+            {!browserSupport.isSupported && browserSupport.message ? (
+              <StatusNotice
+                title="Browser limited"
+                detail={browserSupport.message}
+                tone="warning"
+              />
+            ) : null}
+            {largeTransferWarning ? (
+              <StatusNotice title="Large transfer" detail={largeTransferWarning} tone="warning" />
+            ) : null}
+            {peerConnection.transferError ? (
+              <StatusNotice
+                title={peerConnection.transferError.title}
+                detail={peerConnection.transferError.detail}
+                tone="error"
+                action={
+                  peerConnection.transferError.canRetry ? (
+                    <button
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#5b82f6] px-3 text-sm font-semibold text-white outline-none transition hover:bg-[#3658b6] focus-visible:ring-2 focus-visible:ring-[#5b82f6] focus-visible:ring-offset-2"
+                      type="button"
+                      onClick={() => {
+                        void peerConnection.retryLastTransfer();
+                      }}
+                    >
+                      <RotateCcw aria-hidden="true" className="size-4" />
+                      Retry
+                    </button>
+                  ) : undefined
+                }
+              />
+            ) : null}
             {fileTransfer.manifest ? (
               <div
                 className="rounded-lg bg-white/90 px-4 py-3 text-sm shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4]"
@@ -241,24 +281,6 @@ function getProgressTitle(progress: {
   return `${progress.direction === "sending" ? "Sending" : "Receiving"} ${progress.fileName}`;
 }
 
-function getProgressDetail(progress: {
-  status: "transferring" | "completed" | "failed";
-  bytesTransferred: number;
-  totalBytes: number;
-  completedFiles: number;
-  totalFiles: number;
-}): string {
-  if (progress.status === "completed") {
-    return `${progress.totalFiles} ${progress.totalFiles === 1 ? "file" : "files"} completed`;
-  }
-
-  if (progress.status === "failed") {
-    return `${formatBytes(progress.bytesTransferred)} of ${formatBytes(progress.totalBytes)} sent before failure`;
-  }
-
-  return `${formatBytes(progress.bytesTransferred)} of ${formatBytes(progress.totalBytes)} - ${progress.completedFiles} of ${progress.totalFiles} files`;
-}
-
 function getPeerStatusLabel(status: PeerConnectionStatus | undefined): string {
   if (status === "connecting") {
     return "Connecting";
@@ -340,3 +362,33 @@ export const previewRoomState = createFallbackRoomState({
     { peerId: "peer-tablet", displayName: "Tablet", deviceType: "tablet" }
   ]
 });
+
+function StatusNotice({
+  title,
+  detail,
+  tone,
+  action
+}: {
+  title: string;
+  detail: string;
+  tone: "warning" | "error";
+  action?: React.ReactNode;
+}) {
+  const color = tone === "error" ? "#c92a2a" : "#b7791f";
+
+  return (
+    <section
+      className="w-full max-w-md rounded-lg bg-white/94 px-4 py-3 text-left shadow-[0_14px_36px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
+      aria-label={title}
+    >
+      <div className="flex items-start gap-3">
+        <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0" style={{ color }} />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-[#202124]">{title}</p>
+          <p className="mt-1 text-sm text-[#6b7280]">{detail}</p>
+          {action ? <div className="mt-3">{action}</div> : null}
+        </div>
+      </div>
+    </section>
+  );
+}

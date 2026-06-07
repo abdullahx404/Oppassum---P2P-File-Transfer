@@ -8,6 +8,7 @@ export type PeerConnectionCallbacks = {
   onLocalSignal: (message: Omit<SignalMessage, "roomId" | "fromPeerId" | "toPeerId">) => void;
   onDataChannelOpen: () => void;
   onDataChannelMessage?: (message: string | ArrayBuffer) => void;
+  onDataChannelFailure?: () => void;
   onConnectionStateChange: (state: RTCPeerConnectionState) => void;
 };
 
@@ -41,7 +42,8 @@ export function createPeerConnection(callbacks: PeerConnectionCallbacks): RTCPee
 export function attachDataChannelHandlers(
   channel: RTCDataChannel,
   onOpen: () => void,
-  onMessage?: (message: string | ArrayBuffer) => void
+  onMessage?: (message: string | ArrayBuffer) => void,
+  onFailure?: () => void
 ): RTCDataChannel {
   channel.binaryType = "arraybuffer";
   channel.onopen = () => {
@@ -57,6 +59,8 @@ export function attachDataChannelHandlers(
       onMessage?.(event.data);
     }
   };
+  channel.onerror = () => onFailure?.();
+  channel.onclose = () => onFailure?.();
 
   return channel;
 }

@@ -13,6 +13,7 @@ export type TransferProgressSnapshot = {
   totalBytes: number;
   completedFiles: number;
   totalFiles: number;
+  startedAt?: number;
 };
 
 export type ReceivedTransferFile = {
@@ -52,6 +53,7 @@ export function createTransferProgress(params: {
   totalBytes: number;
   completedFiles: number;
   totalFiles: number;
+  startedAt?: number;
 }): TransferProgressSnapshot {
   return params;
 }

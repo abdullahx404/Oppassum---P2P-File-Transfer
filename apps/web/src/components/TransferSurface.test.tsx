@@ -28,7 +28,7 @@ describe("TransferSurface", () => {
     expect(screen.getByText("Drag over")).toBeInTheDocument();
     expect(screen.getByText("Receiver selected")).toBeInTheDocument();
     expect(screen.getByText("Connection failed")).toBeInTheDocument();
-    expect(screen.getByText("Browser limited")).toBeInTheDocument();
+    expect(screen.getAllByText("Browser limited").length).toBeGreaterThan(0);
   });
 
   it("renders progress and incoming transfer previews", () => {
