@@ -10,8 +10,10 @@ import { ProgressPanel } from "./ProgressPanel";
 import { StatePreview } from "./StatePreview";
 import { TransferDialog } from "./TransferDialog";
 import { UploadTarget } from "./UploadTarget";
+import { useFileTransfer } from "../hooks/useFileTransfer";
 import { useWebRtcPeer, type PeerConnectionStatus } from "../hooks/useWebRtcPeer";
 import { createFallbackRoomState, useSocketRoom, type SocketRoomState } from "../hooks/useSocketRoom";
+import { formatBytes } from "../lib/files";
 
 type TransferSurfaceProps = {
   roomState?: SocketRoomState;
@@ -28,6 +30,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const liveRoomState = useSocketRoom({ enabled: !roomState });
   const currentRoom = roomState ?? liveRoomState;
   const peerConnection = useWebRtcPeer(currentRoom);
+  const fileTransfer = useFileTransfer();
   const peerCount = currentRoom.peers.length;
   const roomStatusText = getRoomStatusText(currentRoom);
   const connectionStatusText = getConnectionStatusText(
@@ -60,6 +63,11 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             positionClassName={peerPositions[index] ?? peerPositions[0]}
             isSelected={peerConnection.activePeerId === peer.peerId}
             onSelect={() => {
+              if (fileTransfer.manifest) {
+                void peerConnection.sendTransferManifest(peer, fileTransfer.manifest);
+                return;
+              }
+
               void peerConnection.connectToPeer(peer);
             }}
           />
@@ -70,7 +78,12 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             {peerCount} nearby {peerCount === 1 ? "device" : "devices"}
           </div>
 
-          <UploadTarget />
+          <UploadTarget
+            selectedCount={fileTransfer.files.length}
+            isDragActive={fileTransfer.isDragActive}
+            onFilesSelected={fileTransfer.selectFiles}
+            onDragActiveChange={fileTransfer.setDragActive}
+          />
 
           <div className="mt-12 flex flex-col items-center gap-3 text-center">
             <span className="flex size-20 items-center justify-center rounded-full text-[#5b82f6] ring-1 ring-[#eef0f4]">
@@ -87,6 +100,27 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             >
               {connectionStatusText}
             </p>
+            {fileTransfer.manifest ? (
+              <div
+                className="rounded-lg bg-white/90 px-4 py-3 text-sm shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4]"
+                aria-label="Selected file manifest"
+              >
+                <p className="font-semibold text-[#202124]">
+                  {fileTransfer.manifest.files.length}{" "}
+                  {fileTransfer.manifest.files.length === 1 ? "file" : "files"} selected
+                </p>
+                <p className="mt-1 text-[#6b7280]">
+                  {formatBytes(fileTransfer.manifest.totalBytes)} ready for manifest approval
+                </p>
+                <button
+                  className="mt-2 text-sm font-semibold text-[#5b82f6] outline-none focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                  type="button"
+                  onClick={fileTransfer.clearFiles}
+                >
+                  Clear selection
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -100,7 +134,14 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               tone="green"
             />
           </div>
-          <TransferDialog />
+          <TransferDialog
+            manifest={peerConnection.incomingOffer?.manifest}
+            senderName={getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device"}
+            title={peerConnection.incomingOffer ? "Incoming files" : "Design assets"}
+            statusText={getOutgoingStatusText(peerConnection.outgoingStatus)}
+            onAccept={peerConnection.acceptIncomingTransfer}
+            onReject={peerConnection.rejectIncomingTransfer}
+          />
         </div>
 
         <div className="mt-5 w-full">
@@ -122,6 +163,32 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
       </section>
     </main>
   );
+}
+
+function getPeerName(roomState: SocketRoomState, peerId: string | undefined): string | undefined {
+  if (!peerId) {
+    return undefined;
+  }
+
+  return roomState.peers.find((peer) => peer.peerId === peerId)?.displayName;
+}
+
+function getOutgoingStatusText(
+  status: { status: "pending" | "accepted" | "rejected" } | undefined
+): string | undefined {
+  if (!status) {
+    return undefined;
+  }
+
+  if (status.status === "accepted") {
+    return "Transfer manifest accepted";
+  }
+
+  if (status.status === "rejected") {
+    return "Transfer manifest rejected";
+  }
+
+  return "Waiting for receiver approval";
 }
 
 function getPeerStatusLabel(status: PeerConnectionStatus | undefined): string {

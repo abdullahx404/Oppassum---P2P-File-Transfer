@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it } from "vitest";
 
@@ -59,5 +59,22 @@ describe("TransferSurface", () => {
 
     rerender(<TransferSurface roomState={previewRoomState} />);
     expect(screen.getByText("4 devices connected")).toBeInTheDocument();
+  });
+
+  it("shows selected file manifest metadata", () => {
+    render(<TransferSurface roomState={previewRoomState} />);
+
+    const input = screen.getByLabelText("Choose files");
+    const file = new File(["hello"], "hello.txt", { type: "text/plain" });
+
+    fireEvent.change(input, {
+      target: {
+        files: [file]
+      }
+    });
+
+    expect(screen.getByLabelText("Selected file manifest")).toBeInTheDocument();
+    expect(screen.getByText("1 file selected")).toBeInTheDocument();
+    expect(screen.getByText("5 B ready for manifest approval")).toBeInTheDocument();
   });
 });

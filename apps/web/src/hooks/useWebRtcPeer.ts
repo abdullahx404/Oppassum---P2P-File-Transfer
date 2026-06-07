@@ -4,6 +4,7 @@ import { CLIENT_EVENTS, SERVER_EVENTS, type Peer, type SignalMessage } from "@op
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { SocketRoomState } from "./useSocketRoom";
+import type { TransferManifest } from "../lib/files";
 import {
   attachDataChannelHandlers,
   createAnswer,
@@ -21,13 +22,34 @@ export type PeerConnectionStatus =
 export type PeerConnectionSnapshot = {
   statuses: Record<string, PeerConnectionStatus>;
   activePeerId?: string;
+  incomingOffer?: IncomingTransferOffer;
+  outgoingStatus?: TransferDecisionStatus;
   connectToPeer: (peer: Peer) => Promise<void>;
+  sendTransferManifest: (peer: Peer, manifest: TransferManifest) => Promise<void>;
+  acceptIncomingTransfer: () => void;
+  rejectIncomingTransfer: () => void;
+};
+
+export type IncomingTransferOffer = {
+  peerId: string;
+  manifest: TransferManifest;
+};
+
+export type TransferDecisionStatus = {
+  peerId: string;
+  transferId: string;
+  status: "pending" | "accepted" | "rejected";
 };
 
 type PeerConnectionSession = {
   connection: RTCPeerConnection;
   channel?: RTCDataChannel;
 };
+
+type ControlMessage =
+  | { kind: "transfer-manifest"; manifest: TransferManifest }
+  | { kind: "transfer-accepted"; transferId: string }
+  | { kind: "transfer-rejected"; transferId: string };
 
 const CONNECTION_TIMEOUT_MS = 15_000;
 
@@ -36,6 +58,8 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
   const timeoutHandles = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const [statuses, setStatuses] = useState<Record<string, PeerConnectionStatus>>({});
   const [activePeerId, setActivePeerId] = useState<string | undefined>();
+  const [incomingOffer, setIncomingOffer] = useState<IncomingTransferOffer | undefined>();
+  const [outgoingStatus, setOutgoingStatus] = useState<TransferDecisionStatus | undefined>();
 
   const setPeerStatus = useCallback((peerId: string, status: PeerConnectionStatus) => {
     setStatuses((current) => ({
@@ -78,6 +102,61 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     [roomState.roomId, roomState.self.peerId, roomState.socket]
   );
 
+  const handleControlMessage = useCallback((peerId: string, rawMessage: string) => {
+    if (rawMessage === "oppassum:probe") {
+      return;
+    }
+
+    const message = parseControlMessage(rawMessage);
+
+    if (!message) {
+      return;
+    }
+
+    if (message.kind === "transfer-manifest") {
+      setIncomingOffer({
+        peerId,
+        manifest: message.manifest
+      });
+    }
+
+    if (message.kind === "transfer-accepted") {
+      setOutgoingStatus((current) =>
+        current?.transferId === message.transferId
+          ? {
+              ...current,
+              status: "accepted"
+            }
+          : current
+      );
+    }
+
+    if (message.kind === "transfer-rejected") {
+      setOutgoingStatus((current) =>
+        current?.transferId === message.transferId
+          ? {
+              ...current,
+              status: "rejected"
+            }
+          : current
+      );
+    }
+  }, []);
+
+  const attachControlChannel = useCallback(
+    (peerId: string, channel: RTCDataChannel): RTCDataChannel =>
+      attachDataChannelHandlers(
+        channel,
+        () => {
+          clearConnectionTimeout(peerId);
+          setPeerStatus(peerId, "data-channel-open");
+          setActivePeerId(peerId);
+        },
+        (message) => handleControlMessage(peerId, message)
+      ),
+    [clearConnectionTimeout, handleControlMessage, setPeerStatus]
+  );
+
   const createSession = useCallback(
     (peerId: string): PeerConnectionSession => {
       const existing = sessions.current.get(peerId);
@@ -107,17 +186,13 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
 
       const session: PeerConnectionSession = { connection };
       connection.ondatachannel = (event) => {
-        session.channel = attachDataChannelHandlers(event.channel, () => {
-          clearConnectionTimeout(peerId);
-          setPeerStatus(peerId, "data-channel-open");
-          setActivePeerId(peerId);
-        });
+        session.channel = attachControlChannel(peerId, event.channel);
       };
 
       sessions.current.set(peerId, session);
       return session;
     },
-    [clearConnectionTimeout, sendSignal, setPeerStatus]
+    [attachControlChannel, clearConnectionTimeout, sendSignal, setPeerStatus]
   );
 
   const connectToPeer = useCallback(
@@ -131,13 +206,9 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
       startConnectionTimeout(peer.peerId);
 
       const session = createSession(peer.peerId);
-      session.channel = attachDataChannelHandlers(
-        session.connection.createDataChannel("oppassum-control"),
-        () => {
-          clearConnectionTimeout(peer.peerId);
-          setPeerStatus(peer.peerId, "data-channel-open");
-          setActivePeerId(peer.peerId);
-        }
+      session.channel = attachControlChannel(
+        peer.peerId,
+        session.connection.createDataChannel("oppassum-control")
       );
 
       const offer = await createOffer(session.connection);
@@ -149,6 +220,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     [
       clearConnectionTimeout,
       createSession,
+      attachControlChannel,
       roomState.socket,
       roomState.status,
       sendSignal,
@@ -156,6 +228,51 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
       startConnectionTimeout
     ]
   );
+
+  const sendTransferManifest = useCallback(
+    async (peer: Peer, manifest: TransferManifest) => {
+      await connectToPeer(peer);
+      const session = createSession(peer.peerId);
+
+      setOutgoingStatus({
+        peerId: peer.peerId,
+        transferId: manifest.transferId,
+        status: "pending"
+      });
+
+      sendWhenChannelOpens(session, {
+        kind: "transfer-manifest",
+        manifest
+      });
+    },
+    [connectToPeer, createSession]
+  );
+
+  const acceptIncomingTransfer = useCallback(() => {
+    if (!incomingOffer) {
+      return;
+    }
+
+    const session = sessions.current.get(incomingOffer.peerId);
+    sendWhenChannelOpens(session, {
+      kind: "transfer-accepted",
+      transferId: incomingOffer.manifest.transferId
+    });
+    setIncomingOffer(undefined);
+  }, [incomingOffer]);
+
+  const rejectIncomingTransfer = useCallback(() => {
+    if (!incomingOffer) {
+      return;
+    }
+
+    const session = sessions.current.get(incomingOffer.peerId);
+    sendWhenChannelOpens(session, {
+      kind: "transfer-rejected",
+      transferId: incomingOffer.manifest.transferId
+    });
+    setIncomingOffer(undefined);
+  }, [incomingOffer]);
 
   useEffect(() => {
     const socket = roomState.socket;
@@ -243,6 +360,52 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
   return {
     statuses,
     activePeerId,
-    connectToPeer
+    incomingOffer,
+    outgoingStatus,
+    connectToPeer,
+    sendTransferManifest,
+    acceptIncomingTransfer,
+    rejectIncomingTransfer
+  };
+}
+
+function parseControlMessage(rawMessage: string): ControlMessage | undefined {
+  try {
+    const parsed = JSON.parse(rawMessage) as ControlMessage;
+
+    if (
+      parsed.kind === "transfer-manifest" ||
+      parsed.kind === "transfer-accepted" ||
+      parsed.kind === "transfer-rejected"
+    ) {
+      return parsed;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
+function sendWhenChannelOpens(
+  session: PeerConnectionSession | undefined,
+  message: ControlMessage
+): void {
+  if (!session?.channel) {
+    return;
+  }
+
+  const channel = session.channel;
+  const serializedMessage = JSON.stringify(message);
+
+  if (channel.readyState === "open") {
+    channel.send(serializedMessage);
+    return;
+  }
+
+  const existingOpenHandler = channel.onopen;
+  channel.onopen = (event) => {
+    existingOpenHandler?.call(channel, event);
+    channel.send(serializedMessage);
   };
 }

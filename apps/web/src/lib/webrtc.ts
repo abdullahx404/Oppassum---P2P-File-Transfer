@@ -7,6 +7,7 @@ export type PeerConnectionRole = "initiator" | "receiver";
 export type PeerConnectionCallbacks = {
   onLocalSignal: (message: Omit<SignalMessage, "roomId" | "fromPeerId" | "toPeerId">) => void;
   onDataChannelOpen: () => void;
+  onDataChannelMessage?: (message: string) => void;
   onConnectionStateChange: (state: RTCPeerConnectionState) => void;
 };
 
@@ -39,12 +40,18 @@ export function createPeerConnection(callbacks: PeerConnectionCallbacks): RTCPee
 
 export function attachDataChannelHandlers(
   channel: RTCDataChannel,
-  onOpen: () => void
+  onOpen: () => void,
+  onMessage?: (message: string) => void
 ): RTCDataChannel {
   channel.binaryType = "arraybuffer";
   channel.onopen = () => {
     channel.send("oppassum:probe");
     onOpen();
+  };
+  channel.onmessage = (event) => {
+    if (typeof event.data === "string") {
+      onMessage?.(event.data);
+    }
   };
 
   return channel;
