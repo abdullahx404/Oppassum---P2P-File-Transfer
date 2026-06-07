@@ -3,6 +3,7 @@ import {
   SERVER_EVENTS,
   roomJoinSchema,
   roomLeaveSchema,
+  signalMessageSchema,
   type EventErrorPayload,
   type Peer
 } from "@oppassum/shared";
@@ -59,8 +60,36 @@ export function registerSocketHandlers(io: Server, roomService = new RoomService
       leaveRoom(io, socket, roomService);
     });
 
-    socket.on(CLIENT_EVENTS.PEER_SIGNAL, () => {
-      emitError(socket, "not_implemented", "Peer signaling will be available in the next phase.");
+    socket.on(CLIENT_EVENTS.PEER_SIGNAL, (payload: unknown) => {
+      const result = signalMessageSchema.safeParse(payload);
+
+      if (!result.success) {
+        emitError(socket, "invalid_signal", "Could not send this connection message.");
+        return;
+      }
+
+      const signal = result.data;
+      const activeRoom = roomService.getSocketRoom(socket.id);
+      const activePeerId = roomService.getSocketPeerId(socket.id);
+
+      if (activeRoom !== signal.roomId) {
+        emitError(socket, "room_mismatch", "This device is not in that room.");
+        return;
+      }
+
+      if (activePeerId !== signal.fromPeerId) {
+        emitError(socket, "peer_spoofing_blocked", "This device cannot send as another peer.");
+        return;
+      }
+
+      const targetSocketId = roomService.getPeerSocketId(signal.roomId, signal.toPeerId);
+
+      if (!targetSocketId) {
+        emitError(socket, "target_peer_missing", "That device is no longer connected.");
+        return;
+      }
+
+      io.to(targetSocketId).emit(SERVER_EVENTS.PEER_SIGNAL, signal);
     });
 
     socket.on("disconnect", () => {

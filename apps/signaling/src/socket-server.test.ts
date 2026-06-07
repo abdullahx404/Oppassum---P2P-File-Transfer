@@ -127,4 +127,69 @@ describe("socket room discovery", () => {
       code: "invalid_room_join"
     });
   });
+
+  it("routes peer signaling only to peers in the same room", async () => {
+    const first = connectClient(server.port);
+    const second = connectClient(server.port);
+    clients.push(first, second);
+
+    first.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-a000") });
+    second.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-b000") });
+    await waitFor(first, SERVER_EVENTS.ROOM_JOINED);
+    await waitFor(second, SERVER_EVENTS.ROOM_JOINED);
+
+    const signalPromise = waitFor<{ fromPeerId: string; toPeerId: string; type: string }>(
+      second,
+      SERVER_EVENTS.PEER_SIGNAL
+    );
+
+    first.emit(CLIENT_EVENTS.PEER_SIGNAL, {
+      roomId: "study",
+      fromPeerId: "peer-a000",
+      toPeerId: "peer-b000",
+      type: "offer",
+      payload: { sdp: "offer-sdp", type: "offer" }
+    });
+
+    await expect(signalPromise).resolves.toMatchObject({
+      fromPeerId: "peer-a000",
+      toPeerId: "peer-b000",
+      type: "offer"
+    });
+  });
+
+  it("blocks cross-room signaling and peer id spoofing", async () => {
+    const first = connectClient(server.port);
+    const second = connectClient(server.port);
+    clients.push(first, second);
+
+    first.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-a000") });
+    second.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "other", peer: peer("peer-b000") });
+    await waitFor(first, SERVER_EVENTS.ROOM_JOINED);
+    await waitFor(second, SERVER_EVENTS.ROOM_JOINED);
+
+    first.emit(CLIENT_EVENTS.PEER_SIGNAL, {
+      roomId: "other",
+      fromPeerId: "peer-a000",
+      toPeerId: "peer-b000",
+      type: "offer",
+      payload: { sdp: "offer-sdp", type: "offer" }
+    });
+
+    await expect(waitFor<{ code: string }>(first, SERVER_EVENTS.EVENT_ERROR)).resolves.toMatchObject({
+      code: "room_mismatch"
+    });
+
+    first.emit(CLIENT_EVENTS.PEER_SIGNAL, {
+      roomId: "study",
+      fromPeerId: "peer-b000",
+      toPeerId: "peer-a000",
+      type: "offer",
+      payload: { sdp: "offer-sdp", type: "offer" }
+    });
+
+    await expect(waitFor<{ code: string }>(first, SERVER_EVENTS.EVENT_ERROR)).resolves.toMatchObject({
+      code: "peer_spoofing_blocked"
+    });
+  });
 });

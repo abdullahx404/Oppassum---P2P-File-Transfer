@@ -20,6 +20,7 @@ export type SocketRoomState = {
   roomId: string;
   self: Peer;
   peers: Peer[];
+  socket?: Socket;
   errorMessage?: string;
 };
 
@@ -32,7 +33,7 @@ const DEFAULT_ROOM_ID = "local-room";
 const DEFAULT_SIGNALING_URL = "http://localhost:4000";
 
 export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomState {
-  const { enabled = true, roomId = DEFAULT_ROOM_ID } = options;
+  const { enabled = true, roomId = getInitialRoomId(options.roomId) } = options;
   const self = useMemo(() => createSessionPeer(), []);
   const [state, setState] = useState<SocketRoomState>({
     status: "connecting",
@@ -40,6 +41,7 @@ export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomSta
     self,
     peers: []
   });
+  const [socketInstance, setSocketInstance] = useState<Socket | undefined>();
 
   useEffect(() => {
     if (!enabled) {
@@ -50,6 +52,7 @@ export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomSta
       transports: ["websocket", "polling"],
       reconnectionAttempts: 2
     });
+    setSocketInstance(socket);
 
     socket.on("connect", () => {
       socket.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId, peer: self });
@@ -60,6 +63,7 @@ export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomSta
         status: "connected",
         roomId: payload.roomId,
         self: payload.self,
+        socket,
         peers: withoutSelf(payload.peers, payload.self.peerId)
       });
     });
@@ -105,10 +109,14 @@ export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomSta
 
     return () => {
       leaveRoom(socket, roomId);
+      setSocketInstance(undefined);
     };
   }, [enabled, roomId, self]);
 
-  return state;
+  return {
+    ...state,
+    socket: socketInstance
+  };
 }
 
 export function createFallbackRoomState(overrides: Partial<SocketRoomState> = {}): SocketRoomState {
@@ -202,4 +210,17 @@ function getDeviceName(): string {
   }
 
   return "Device";
+}
+
+function getInitialRoomId(configuredRoomId: string | undefined): string {
+  if (configuredRoomId) {
+    return configuredRoomId;
+  }
+
+  if (typeof window === "undefined") {
+    return DEFAULT_ROOM_ID;
+  }
+
+  const urlRoomId = new URLSearchParams(window.location.search).get("room");
+  return urlRoomId && /^[a-zA-Z0-9_-]{3,64}$/.test(urlRoomId) ? urlRoomId : DEFAULT_ROOM_ID;
 }

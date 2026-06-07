@@ -7,9 +7,10 @@ test("two browser tabs discover each other through the signaling server", async 
   const secondContext = await browser.newContext();
   const firstPage = await firstContext.newPage();
   const secondPage = await secondContext.newPage();
+  const roomId = `phase3-${Date.now()}`;
 
-  await firstPage.goto("/");
-  await secondPage.goto("/");
+  await firstPage.goto(`/?room=${roomId}`);
+  await secondPage.goto(`/?room=${roomId}`);
 
   await expect(firstPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
   await expect(secondPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });

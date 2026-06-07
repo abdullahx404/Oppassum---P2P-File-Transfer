@@ -65,6 +65,10 @@ export class RoomService {
     return this.socketPeers.get(socketId);
   }
 
+  getPeerSocketId(roomId: string, peerId: string): string | undefined {
+    return this.rooms.get(roomId)?.peers.get(peerId)?.socketId;
+  }
+
   getRoomCount(): number {
     return this.rooms.size;
   }

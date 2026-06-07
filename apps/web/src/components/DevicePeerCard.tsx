@@ -9,6 +9,7 @@ type DevicePeerCardProps = {
   kind: DeviceKind;
   positionClassName: string;
   isSelected?: boolean;
+  onSelect?: () => void;
 };
 
 const deviceIcons = {
@@ -24,7 +25,8 @@ export function DevicePeerCard({
   status,
   kind,
   positionClassName,
-  isSelected = false
+  isSelected = false,
+  onSelect
 }: DevicePeerCardProps) {
   const DeviceIcon = deviceIcons[kind];
 
@@ -33,6 +35,7 @@ export function DevicePeerCard({
       className={`absolute hidden w-[148px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 rounded-lg bg-white/88 px-4 py-3 text-center shadow-[0_18px_45px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4] backdrop-blur outline-none transition hover:-translate-y-[calc(50%+2px)] hover:shadow-[0_22px_55px_rgba(32,33,36,0.11)] focus-visible:ring-2 focus-visible:ring-[#5b82f6] md:flex ${positionClassName}`}
       type="button"
       aria-label={`${name}, ${status}`}
+      onClick={onSelect}
     >
       <span
         className={`flex size-12 items-center justify-center rounded-full ${

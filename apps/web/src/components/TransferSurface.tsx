@@ -10,6 +10,7 @@ import { ProgressPanel } from "./ProgressPanel";
 import { StatePreview } from "./StatePreview";
 import { TransferDialog } from "./TransferDialog";
 import { UploadTarget } from "./UploadTarget";
+import { useWebRtcPeer, type PeerConnectionStatus } from "../hooks/useWebRtcPeer";
 import { createFallbackRoomState, useSocketRoom, type SocketRoomState } from "../hooks/useSocketRoom";
 
 type TransferSurfaceProps = {
@@ -26,8 +27,13 @@ const peerPositions = [
 export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const liveRoomState = useSocketRoom({ enabled: !roomState });
   const currentRoom = roomState ?? liveRoomState;
+  const peerConnection = useWebRtcPeer(currentRoom);
   const peerCount = currentRoom.peers.length;
   const roomStatusText = getRoomStatusText(currentRoom);
+  const connectionStatusText = getConnectionStatusText(
+    peerConnection.activePeerId,
+    peerConnection.statuses
+  );
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124]">
@@ -49,10 +55,13 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           <DevicePeerCard
             key={peer.peerId}
             name={peer.displayName}
-            status="Ready"
+            status={getPeerStatusLabel(peerConnection.statuses[peer.peerId])}
             kind={toDeviceKind(peer.deviceType)}
             positionClassName={peerPositions[index] ?? peerPositions[0]}
-            isSelected={index === 0}
+            isSelected={peerConnection.activePeerId === peer.peerId}
+            onSelect={() => {
+              void peerConnection.connectToPeer(peer);
+            }}
           />
         ))}
 
@@ -71,6 +80,13 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               The easiest way to transfer data across devices
             </p>
             <p className="text-sm font-medium text-[#5b82f6]">{roomStatusText}</p>
+            <p
+              className="min-h-5 text-sm font-semibold text-[#2f9e44]"
+              aria-live="polite"
+              data-testid="webrtc-connection-status"
+            >
+              {connectionStatusText}
+            </p>
           </div>
         </div>
 
@@ -106,6 +122,55 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
       </section>
     </main>
   );
+}
+
+function getPeerStatusLabel(status: PeerConnectionStatus | undefined): string {
+  if (status === "connecting") {
+    return "Connecting";
+  }
+
+  if (status === "data-channel-open") {
+    return "Data channel open";
+  }
+
+  if (status === "failed") {
+    return "Connection failed";
+  }
+
+  if (status === "disconnected") {
+    return "Disconnected";
+  }
+
+  return "Ready";
+}
+
+function getConnectionStatusText(
+  activePeerId: string | undefined,
+  statuses: Record<string, PeerConnectionStatus>
+): string {
+  if (!activePeerId) {
+    return "";
+  }
+
+  const status = statuses[activePeerId];
+
+  if (status === "connecting") {
+    return "Creating secure peer connection...";
+  }
+
+  if (status === "data-channel-open") {
+    return "Data channel open";
+  }
+
+  if (status === "failed") {
+    return "Peer connection failed";
+  }
+
+  if (status === "disconnected") {
+    return "Peer disconnected";
+  }
+
+  return "";
 }
 
 function getRoomStatusText(roomState: SocketRoomState): string {
