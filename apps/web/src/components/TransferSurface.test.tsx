@@ -4,11 +4,12 @@ import { render, screen } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it } from "vitest";
 
-import { TransferSurface } from "./TransferSurface";
+import { TransferSurface, previewRoomState } from "./TransferSurface";
+import { createFallbackRoomState } from "../hooks/useSocketRoom";
 
 describe("TransferSurface", () => {
   it("renders the required static upload shell", () => {
-    render(<TransferSurface />);
+    render(<TransferSurface roomState={previewRoomState} />);
 
     expect(screen.getByLabelText("Oppassum home")).toBeInTheDocument();
     expect(screen.getByLabelText("Information")).toBeInTheDocument();
@@ -19,10 +20,10 @@ describe("TransferSurface", () => {
   });
 
   it("shows mock peers and transfer states for Phase 2", () => {
-    render(<TransferSurface />);
+    render(<TransferSurface roomState={previewRoomState} />);
 
     expect(screen.getByRole("button", { name: "Studio Laptop, Ready" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Amina Phone, Selected" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Amina Phone, Ready" })).toBeInTheDocument();
     expect(screen.getByText("Connecting")).toBeInTheDocument();
     expect(screen.getByText("Drag over")).toBeInTheDocument();
     expect(screen.getByText("Receiver selected")).toBeInTheDocument();
@@ -31,7 +32,7 @@ describe("TransferSurface", () => {
   });
 
   it("renders progress and incoming transfer previews", () => {
-    render(<TransferSurface />);
+    render(<TransferSurface roomState={previewRoomState} />);
 
     expect(screen.getByRole("progressbar", { name: "Sending portfolio.zip" })).toHaveAttribute(
       "aria-valuenow",
@@ -44,5 +45,19 @@ describe("TransferSurface", () => {
     expect(screen.getByLabelText("Incoming transfer preview")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Accept" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
+  });
+
+  it("shows connecting, empty, and peer list states from room discovery", () => {
+    const { rerender } = render(
+      <TransferSurface roomState={createFallbackRoomState({ status: "connecting", peers: [] })} />
+    );
+
+    expect(screen.getByText("Connecting to nearby devices...")).toBeInTheDocument();
+
+    rerender(<TransferSurface roomState={createFallbackRoomState({ status: "connected", peers: [] })} />);
+    expect(screen.getByText("No devices connected yet")).toBeInTheDocument();
+
+    rerender(<TransferSurface roomState={previewRoomState} />);
+    expect(screen.getByText("4 devices connected")).toBeInTheDocument();
   });
 });

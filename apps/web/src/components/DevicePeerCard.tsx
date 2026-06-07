@@ -1,7 +1,7 @@
-import { Laptop, Monitor, Smartphone, Tablet } from "lucide-react";
+import { HelpCircle, Laptop, Monitor, Smartphone, Tablet } from "lucide-react";
 import React from "react";
 
-type DeviceKind = "laptop" | "desktop" | "phone" | "tablet";
+type DeviceKind = "laptop" | "desktop" | "phone" | "tablet" | "unknown";
 
 type DevicePeerCardProps = {
   name: string;
@@ -15,7 +15,8 @@ const deviceIcons = {
   laptop: Laptop,
   desktop: Monitor,
   phone: Smartphone,
-  tablet: Tablet
+  tablet: Tablet,
+  unknown: HelpCircle
 } satisfies Record<DeviceKind, typeof Laptop>;
 
 export function DevicePeerCard({

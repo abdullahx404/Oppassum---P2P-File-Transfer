@@ -11,12 +11,20 @@ export default defineConfig({
     launchOptions: chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : undefined,
     trace: "on-first-retry"
   },
-  webServer: {
-    command: "npm run dev --workspace @oppassum/web -- --hostname 127.0.0.1 --port 3200",
-    url: "http://127.0.0.1:3200",
-    reuseExistingServer: true,
-    timeout: 120_000
-  },
+  webServer: [
+    {
+      command: "npm run dev --workspace @oppassum/signaling",
+      url: "http://127.0.0.1:4000/health",
+      reuseExistingServer: true,
+      timeout: 120_000
+    },
+    {
+      command: "npm run dev --workspace @oppassum/web -- --hostname 127.0.0.1 --port 3200",
+      url: "http://127.0.0.1:3200",
+      reuseExistingServer: true,
+      timeout: 120_000
+    }
+  ],
   projects: [
     {
       name: "desktop",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CLIENT_EVENTS, roomJoinSchema } from "./index.js";
+import { CLIENT_EVENTS, roomJoinSchema, roomJoinedSchema } from "./index.js";
 
 describe("shared foundation", () => {
   it("defines stable room join event names", () => {
@@ -18,5 +18,21 @@ describe("shared foundation", () => {
     };
 
     expect(roomJoinSchema.safeParse(payload).success).toBe(true);
+  });
+
+  it("validates room joined payloads with peers", () => {
+    const peer = {
+      peerId: "peer-123456",
+      displayName: "Laptop",
+      deviceType: "laptop"
+    };
+
+    expect(
+      roomJoinedSchema.safeParse({
+        roomId: "study-room",
+        self: peer,
+        peers: [peer]
+      }).success
+    ).toBe(true);
   });
 });

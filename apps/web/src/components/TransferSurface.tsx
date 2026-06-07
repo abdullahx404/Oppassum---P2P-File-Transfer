@@ -1,3 +1,6 @@
+"use client";
+
+import type { DeviceType } from "@oppassum/shared";
 import { Download, Info, Radio } from "lucide-react";
 import React from "react";
 
@@ -7,36 +10,25 @@ import { ProgressPanel } from "./ProgressPanel";
 import { StatePreview } from "./StatePreview";
 import { TransferDialog } from "./TransferDialog";
 import { UploadTarget } from "./UploadTarget";
+import { createFallbackRoomState, useSocketRoom, type SocketRoomState } from "../hooks/useSocketRoom";
 
-const peers = [
-  {
-    name: "Studio Laptop",
-    status: "Ready",
-    kind: "laptop",
-    positionClassName: "left-[22%] top-[36%]"
-  },
-  {
-    name: "Amina Phone",
-    status: "Selected",
-    kind: "phone",
-    positionClassName: "left-[78%] top-[38%]",
-    isSelected: true
-  },
-  {
-    name: "Desk Monitor",
-    status: "Online",
-    kind: "desktop",
-    positionClassName: "left-[31%] top-[55%]"
-  },
-  {
-    name: "Tablet",
-    status: "Receiving",
-    kind: "tablet",
-    positionClassName: "left-[69%] top-[55%]"
-  }
+type TransferSurfaceProps = {
+  roomState?: SocketRoomState;
+};
+
+const peerPositions = [
+  "left-[22%] top-[36%]",
+  "left-[78%] top-[38%]",
+  "left-[31%] top-[55%]",
+  "left-[69%] top-[55%]"
 ] as const;
 
-export function TransferSurface() {
+export function TransferSurface({ roomState }: TransferSurfaceProps) {
+  const liveRoomState = useSocketRoom({ enabled: !roomState });
+  const currentRoom = roomState ?? liveRoomState;
+  const peerCount = currentRoom.peers.length;
+  const roomStatusText = getRoomStatusText(currentRoom);
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124]">
       <div className="radar-rings" aria-hidden="true" />
@@ -53,13 +45,20 @@ export function TransferSurface() {
       </header>
 
       <section className="relative z-10 mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-[1440px] flex-col items-center px-5 pb-8 pt-8 sm:px-8 md:pt-16">
-        {peers.map((peer) => (
-          <DevicePeerCard key={peer.name} {...peer} />
+        {currentRoom.peers.slice(0, peerPositions.length).map((peer, index) => (
+          <DevicePeerCard
+            key={peer.peerId}
+            name={peer.displayName}
+            status="Ready"
+            kind={toDeviceKind(peer.deviceType)}
+            positionClassName={peerPositions[index] ?? peerPositions[0]}
+            isSelected={index === 0}
+          />
         ))}
 
         <div className="flex w-full flex-1 flex-col items-center justify-center">
           <div className="rounded-full border border-dashed border-[#dfe4ef] bg-white/50 px-4 py-2 text-sm font-medium text-[#6b7280] shadow-[0_14px_40px_rgba(32,33,36,0.04)] md:hidden">
-            4 nearby devices
+            {peerCount} nearby {peerCount === 1 ? "device" : "devices"}
           </div>
 
           <UploadTarget />
@@ -71,7 +70,7 @@ export function TransferSurface() {
             <p className="max-w-sm text-base font-medium text-[#3c4043]">
               The easiest way to transfer data across devices
             </p>
-            <p className="text-sm font-medium text-[#5b82f6]">No devices connected yet</p>
+            <p className="text-sm font-medium text-[#5b82f6]">{roomStatusText}</p>
           </div>
         </div>
 
@@ -108,3 +107,36 @@ export function TransferSurface() {
     </main>
   );
 }
+
+function getRoomStatusText(roomState: SocketRoomState): string {
+  if (roomState.status === "connecting") {
+    return "Connecting to nearby devices...";
+  }
+
+  if (roomState.status === "error") {
+    return roomState.errorMessage ?? "Could not connect to the signaling server.";
+  }
+
+  if (roomState.status === "disconnected") {
+    return "Disconnected from the signaling server.";
+  }
+
+  if (roomState.peers.length === 0) {
+    return "No devices connected yet";
+  }
+
+  return `${roomState.peers.length} ${roomState.peers.length === 1 ? "device" : "devices"} connected`;
+}
+
+function toDeviceKind(deviceType: DeviceType): "laptop" | "desktop" | "phone" | "tablet" | "unknown" {
+  return deviceType;
+}
+
+export const previewRoomState = createFallbackRoomState({
+  peers: [
+    { peerId: "peer-studio-laptop", displayName: "Studio Laptop", deviceType: "laptop" },
+    { peerId: "peer-amina-phone", displayName: "Amina Phone", deviceType: "phone" },
+    { peerId: "peer-desk-monitor", displayName: "Desk Monitor", deviceType: "desktop" },
+    { peerId: "peer-tablet", displayName: "Tablet", deviceType: "tablet" }
+  ]
+});

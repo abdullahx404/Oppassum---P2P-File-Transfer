@@ -34,6 +34,31 @@ export const roomJoinSchema = z.object({
   peer: peerSchema
 });
 
+export const roomLeaveSchema = z.object({
+  roomId: roomIdSchema
+});
+
+export const roomJoinedSchema = z.object({
+  roomId: roomIdSchema,
+  self: peerSchema,
+  peers: z.array(peerSchema)
+});
+
+export const peerJoinedSchema = z.object({
+  roomId: roomIdSchema,
+  peer: peerSchema
+});
+
+export const peerLeftSchema = z.object({
+  roomId: roomIdSchema,
+  peerId: z.string().min(8).max(64)
+});
+
+export const eventErrorSchema = z.object({
+  code: z.string().min(1).max(80),
+  message: z.string().min(1).max(200)
+});
+
 export const signalTypeSchema = z.enum(["offer", "answer", "ice-candidate"]);
 
 export const signalMessageSchema = z.object({
@@ -45,7 +70,12 @@ export const signalMessageSchema = z.object({
 });
 
 export type DeviceType = z.infer<typeof deviceTypeSchema>;
+export type EventErrorPayload = z.infer<typeof eventErrorSchema>;
 export type Peer = z.infer<typeof peerSchema>;
+export type PeerJoinedPayload = z.infer<typeof peerJoinedSchema>;
+export type PeerLeftPayload = z.infer<typeof peerLeftSchema>;
+export type RoomJoinedPayload = z.infer<typeof roomJoinedSchema>;
 export type RoomJoinPayload = z.infer<typeof roomJoinSchema>;
+export type RoomLeavePayload = z.infer<typeof roomLeaveSchema>;
 export type SignalMessage = z.infer<typeof signalMessageSchema>;
 export type SignalType = z.infer<typeof signalTypeSchema>;

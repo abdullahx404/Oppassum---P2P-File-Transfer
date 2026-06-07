@@ -1,0 +1,130 @@
+import { CLIENT_EVENTS, SERVER_EVENTS, type Peer } from "@oppassum/shared";
+import { createServer, type Server as HttpServer } from "node:http";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { io as createClient, type Socket as ClientSocket } from "socket.io-client";
+import { Server } from "socket.io";
+
+import { registerSocketHandlers } from "./socket-server.js";
+
+type TestServer = {
+  httpServer: HttpServer;
+  ioServer: Server;
+  port: number;
+  close: () => Promise<void>;
+};
+
+function peer(peerId: string, displayName = peerId): Peer {
+  return {
+    peerId,
+    displayName,
+    deviceType: "laptop"
+  };
+}
+
+function waitFor<T>(socket: ClientSocket, event: string): Promise<T> {
+  return new Promise((resolve) => {
+    socket.once(event, (payload: T) => resolve(payload));
+  });
+}
+
+async function createTestServer(): Promise<TestServer> {
+  const httpServer = createServer();
+  const ioServer = new Server(httpServer, {
+    cors: {
+      origin: "http://localhost:3000"
+    }
+  });
+
+  registerSocketHandlers(ioServer);
+
+  await new Promise<void>((resolve) => {
+    httpServer.listen(0, resolve);
+  });
+
+  const address = httpServer.address();
+
+  if (!address || typeof address === "string") {
+    throw new Error("Could not start test server.");
+  }
+
+  return {
+    httpServer,
+    ioServer,
+    port: address.port,
+    close: async () => {
+      await ioServer.close();
+      await new Promise<void>((resolve) => {
+        httpServer.close(() => resolve());
+      });
+    }
+  };
+}
+
+function connectClient(port: number): ClientSocket {
+  return createClient(`http://127.0.0.1:${port}`, {
+    forceNew: true,
+    reconnection: false,
+    transports: ["websocket"]
+  });
+}
+
+describe("socket room discovery", () => {
+  let server: TestServer;
+  const clients: ClientSocket[] = [];
+
+  beforeEach(async () => {
+    server = await createTestServer();
+  });
+
+  afterEach(async () => {
+    clients.forEach((client) => client.disconnect());
+    clients.length = 0;
+    await server.close();
+  });
+
+  it("confirms join and sends existing peers to later peers", async () => {
+    const first = connectClient(server.port);
+    const second = connectClient(server.port);
+    clients.push(first, second);
+
+    first.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-a000") });
+    const firstJoined = await waitFor<{ peers: Peer[] }>(first, SERVER_EVENTS.ROOM_JOINED);
+
+    second.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-b000") });
+    const secondJoined = await waitFor<{ peers: Peer[] }>(second, SERVER_EVENTS.ROOM_JOINED);
+
+    expect(firstJoined.peers.map((item) => item.peerId)).toEqual(["peer-a000"]);
+    expect(secondJoined.peers.map((item) => item.peerId)).toEqual(["peer-a000", "peer-b000"]);
+  });
+
+  it("broadcasts peer join and leave events", async () => {
+    const first = connectClient(server.port);
+    const second = connectClient(server.port);
+    clients.push(first, second);
+
+    first.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-a000") });
+    await waitFor(first, SERVER_EVENTS.ROOM_JOINED);
+
+    const joinedPromise = waitFor<{ peer: Peer }>(first, SERVER_EVENTS.PEER_JOINED);
+    second.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "study", peer: peer("peer-b000") });
+    await waitFor(second, SERVER_EVENTS.ROOM_JOINED);
+
+    expect((await joinedPromise).peer.peerId).toBe("peer-b000");
+
+    const leftPromise = waitFor<{ peerId: string }>(first, SERVER_EVENTS.PEER_LEFT);
+    second.disconnect();
+
+    expect((await leftPromise).peerId).toBe("peer-b000");
+  });
+
+  it("rejects invalid room join payloads", async () => {
+    const client = connectClient(server.port);
+    clients.push(client);
+
+    client.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "../bad", peer: peer("peer-a000") });
+
+    await expect(waitFor<{ code: string }>(client, SERVER_EVENTS.EVENT_ERROR)).resolves.toMatchObject({
+      code: "invalid_room_join"
+    });
+  });
+});
