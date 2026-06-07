@@ -7,7 +7,7 @@ export type PeerConnectionRole = "initiator" | "receiver";
 export type PeerConnectionCallbacks = {
   onLocalSignal: (message: Omit<SignalMessage, "roomId" | "fromPeerId" | "toPeerId">) => void;
   onDataChannelOpen: () => void;
-  onDataChannelMessage?: (message: string) => void;
+  onDataChannelMessage?: (message: string | ArrayBuffer) => void;
   onConnectionStateChange: (state: RTCPeerConnectionState) => void;
 };
 
@@ -41,7 +41,7 @@ export function createPeerConnection(callbacks: PeerConnectionCallbacks): RTCPee
 export function attachDataChannelHandlers(
   channel: RTCDataChannel,
   onOpen: () => void,
-  onMessage?: (message: string) => void
+  onMessage?: (message: string | ArrayBuffer) => void
 ): RTCDataChannel {
   channel.binaryType = "arraybuffer";
   channel.onopen = () => {
@@ -50,6 +50,10 @@ export function attachDataChannelHandlers(
   };
   channel.onmessage = (event) => {
     if (typeof event.data === "string") {
+      onMessage?.(event.data);
+    }
+
+    if (event.data instanceof ArrayBuffer) {
       onMessage?.(event.data);
     }
   };

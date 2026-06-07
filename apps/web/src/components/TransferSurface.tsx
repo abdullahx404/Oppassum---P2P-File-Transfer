@@ -13,6 +13,7 @@ import { UploadTarget } from "./UploadTarget";
 import { useFileTransfer } from "../hooks/useFileTransfer";
 import { useWebRtcPeer, type PeerConnectionStatus } from "../hooks/useWebRtcPeer";
 import { createFallbackRoomState, useSocketRoom, type SocketRoomState } from "../hooks/useSocketRoom";
+import { getTransferPercent } from "../lib/chunked-transfer";
 import { formatBytes } from "../lib/files";
 
 type TransferSurfaceProps = {
@@ -64,7 +65,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             isSelected={peerConnection.activePeerId === peer.peerId}
             onSelect={() => {
               if (fileTransfer.manifest) {
-                void peerConnection.sendTransferManifest(peer, fileTransfer.manifest);
+                void peerConnection.sendTransferManifest(peer, fileTransfer.manifest, fileTransfer.files);
                 return;
               }
 
@@ -126,13 +127,24 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
 
         <div className="mt-8 grid w-full max-w-[1120px] gap-4 lg:grid-cols-[1fr_360px]">
           <div className="grid gap-3 sm:grid-cols-2">
-            <ProgressPanel title="Sending portfolio.zip" detail="42 MB of 80 MB" value={52} />
-            <ProgressPanel
-              title="Received brand-kit"
-              detail="Completed from Studio Laptop"
-              value={100}
-              tone="green"
-            />
+            {peerConnection.transferProgress ? (
+              <ProgressPanel
+                title={getProgressTitle(peerConnection.transferProgress)}
+                detail={getProgressDetail(peerConnection.transferProgress)}
+                value={getTransferPercent(peerConnection.transferProgress)}
+                tone={peerConnection.transferProgress.direction === "receiving" ? "green" : "blue"}
+              />
+            ) : (
+              <>
+                <ProgressPanel title="Sending portfolio.zip" detail="42 MB of 80 MB" value={52} />
+                <ProgressPanel
+                  title="Received brand-kit"
+                  detail="Completed from Studio Laptop"
+                  value={100}
+                  tone="green"
+                />
+              </>
+            )}
           </div>
           <TransferDialog
             manifest={peerConnection.incomingOffer?.manifest}
@@ -147,6 +159,28 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         <div className="mt-5 w-full">
           <StatePreview />
         </div>
+
+        {peerConnection.receivedFiles.length > 0 ? (
+          <section
+            className="mt-5 w-full max-w-[1120px] rounded-lg bg-white/94 p-4 shadow-[0_18px_48px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
+            aria-label="Received files"
+          >
+            <p className="text-sm font-semibold text-[#202124]">Received files</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {peerConnection.receivedFiles.map((file) => (
+                <a
+                  key={`${file.id}-${file.url}`}
+                  className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[#f8fafc] px-3 py-2 text-sm font-medium text-[#3c4043] outline-none ring-1 ring-[#eef0f4] transition hover:bg-[#f2f5ff] focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                  href={file.url}
+                  download={file.relativePath ?? file.name}
+                >
+                  <span className="truncate">{file.relativePath ?? file.name}</span>
+                  <span className="shrink-0 text-xs text-[#6b7280]">{formatBytes(file.size)}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div className="sr-only" aria-live="polite">
           Drag-over state active. File selected. Sending progress. Receiving progress. Peer disconnected
@@ -189,6 +223,40 @@ function getOutgoingStatusText(
   }
 
   return "Waiting for receiver approval";
+}
+
+function getProgressTitle(progress: {
+  direction: "sending" | "receiving";
+  status: "transferring" | "completed" | "failed";
+  fileName: string;
+}): string {
+  if (progress.status === "completed") {
+    return progress.direction === "sending" ? "Sent files" : "Received files";
+  }
+
+  if (progress.status === "failed") {
+    return "Transfer failed";
+  }
+
+  return `${progress.direction === "sending" ? "Sending" : "Receiving"} ${progress.fileName}`;
+}
+
+function getProgressDetail(progress: {
+  status: "transferring" | "completed" | "failed";
+  bytesTransferred: number;
+  totalBytes: number;
+  completedFiles: number;
+  totalFiles: number;
+}): string {
+  if (progress.status === "completed") {
+    return `${progress.totalFiles} ${progress.totalFiles === 1 ? "file" : "files"} completed`;
+  }
+
+  if (progress.status === "failed") {
+    return `${formatBytes(progress.bytesTransferred)} of ${formatBytes(progress.totalBytes)} sent before failure`;
+  }
+
+  return `${formatBytes(progress.bytesTransferred)} of ${formatBytes(progress.totalBytes)} - ${progress.completedFiles} of ${progress.totalFiles} files`;
 }
 
 function getPeerStatusLabel(status: PeerConnectionStatus | undefined): string {
