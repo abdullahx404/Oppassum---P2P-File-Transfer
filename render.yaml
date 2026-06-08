@@ -3,7 +3,7 @@ services:
     name: oppassum-signaling
     env: node
     plan: free
-    buildCommand: npm install && npm run build --workspace @oppassum/signaling
+    buildCommand: npm install && npm run build --workspace @oppassum/shared && npm run build --workspace @oppassum/signaling
     startCommand: npm run start --workspace @oppassum/signaling
     healthCheckPath: /health
     envVars:
