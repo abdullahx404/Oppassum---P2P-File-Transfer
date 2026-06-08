@@ -112,7 +112,7 @@ describe("TransferSurface", () => {
 
     expect(screen.getByText("1 Folder Selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload as ZIP" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Upload as files" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload Only Files" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Upload as ZIP" }));
 

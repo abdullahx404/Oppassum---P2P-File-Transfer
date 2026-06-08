@@ -54,6 +54,7 @@ export function UploadTarget({
           onChange={(event) => {
             if (event.currentTarget.files) {
               onFilesSelected(event.currentTarget.files);
+              event.currentTarget.value = "";
             }
           }}
         />
@@ -83,6 +84,7 @@ export function UploadTarget({
           onChange={(event) => {
             if (event.currentTarget.files) {
               onFilesSelected(event.currentTarget.files);
+              event.currentTarget.value = "";
             }
           }}
         />

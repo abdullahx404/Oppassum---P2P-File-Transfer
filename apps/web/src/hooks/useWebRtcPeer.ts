@@ -38,6 +38,7 @@ export type PeerConnectionSnapshot = {
   receivedFiles: ReceivedTransferFile[];
   clearReceivedFiles: () => void;
   clearTransferError: () => void;
+  clearTransferProgress: () => void;
   connectToPeer: (peer: Peer) => Promise<void>;
   sendTransferManifest: (peer: Peer, manifest: TransferManifest, files: File[]) => Promise<void>;
   retryLastTransfer: () => Promise<void>;
@@ -729,6 +730,11 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     setTransferError(undefined);
   }, []);
 
+  const clearTransferProgress = useCallback(() => {
+    setTransferProgress(undefined);
+    setOutgoingStatus(undefined);
+  }, []);
+
   useEffect(() => {
     const socket = roomState.socket;
 
@@ -835,6 +841,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     receivedFiles,
     clearReceivedFiles,
     clearTransferError,
+    clearTransferProgress,
     connectToPeer,
     sendTransferManifest,
     retryLastTransfer,

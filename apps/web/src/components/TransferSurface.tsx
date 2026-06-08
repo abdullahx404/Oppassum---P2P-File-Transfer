@@ -186,12 +186,12 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           />
 
           <div className="mt-8 flex flex-col items-center gap-2 text-center">
-            <span className="flex size-16 items-center justify-center rounded-full bg-white text-[#ff5b38] shadow-[0_14px_40px_rgba(255,91,56,0.12)] ring-1 ring-[#ffe0cf]">
+            <span className="flex size-16 items-center justify-center rounded-full bg-white text-[#ff5b38] shadow-[0_14px_40px_rgba(255,91,56,0.12)] ring-1 ring-[#ffe0cf] transition duration-200 hover:-translate-y-1 hover:scale-110">
               <img
                 src="/oppassum-logo.png"
                 alt=""
                 aria-hidden="true"
-                className="size-12 object-contain transition duration-200 hover:-translate-y-1 hover:scale-110"
+                className="size-12 object-contain"
               />
             </span>
             <p className="max-w-sm text-center text-base font-medium text-[#3c4043] md:max-w-none md:whitespace-nowrap md:text-lg">
@@ -261,7 +261,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                       void fileTransfer.confirmFolderSelection("files");
                     }}
                   >
-                    Upload as files
+                    Upload Only Files
                   </button>
                   <button
                     className="inline-flex h-10 items-center justify-center rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
@@ -341,6 +341,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 detail={getProgressDetail(peerConnection.transferProgress)}
                 value={getTransferPercent(peerConnection.transferProgress)}
                 tone={peerConnection.transferProgress.direction === "receiving" ? "green" : "blue"}
+                onDismiss={peerConnection.clearTransferProgress}
               />
             ) : null}
             {peerConnection.outgoingStatus ? (
