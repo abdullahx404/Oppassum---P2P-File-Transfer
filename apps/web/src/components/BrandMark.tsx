@@ -12,7 +12,7 @@ export function BrandMark() {
           src="/oppassum-logo.png"
           alt=""
           aria-hidden="true"
-          className="size-10 object-contain"
+          className="size-7 object-contain"
         />
       </span>
       <span className="text-2xl font-semibold tracking-normal sm:text-3xl">Oppassum</span>

@@ -154,7 +154,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
 
           <div className="mt-8 flex flex-col items-center gap-2 text-center">
             <span className="flex size-16 items-center justify-center rounded-full bg-white text-[#ff5b38] shadow-[0_14px_40px_rgba(255,91,56,0.12)] ring-1 ring-[#ffe0cf]">
-              <img src="/oppassum-logo.png" alt="" aria-hidden="true" className="size-[60px] object-contain" />
+              <img src="/oppassum-logo.png" alt="" aria-hidden="true" className="size-12 object-contain" />
             </span>
             <p className="max-w-sm text-base font-medium text-[#3c4043]">
               The easiest way to transfer data across devices

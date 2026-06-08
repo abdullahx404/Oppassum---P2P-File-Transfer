@@ -39,6 +39,12 @@ export function UploadTarget({
         }
       }}
     >
+      <div className="radar-rings" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
       <label className="upload-target-circle group relative z-10 flex size-48 cursor-pointer items-center justify-center rounded-full bg-white text-center outline-none sm:size-56 md:size-64">
         <input
           className="file-input-control"
@@ -51,7 +57,7 @@ export function UploadTarget({
             }
           }}
         />
-        <span className="upload-gradient-ring absolute inset-0 z-10 rounded-full bg-[linear-gradient(135deg,#f2055c_0%,#ff4d35_48%,#ffb000_100%)] p-[14px] transition group-hover:scale-[1.02] group-focus-within:ring-4 group-focus-within:ring-[#ff7a1a]/30">
+        <span className="upload-gradient-ring absolute inset-0 z-10 rounded-full bg-[linear-gradient(135deg,#f2055c_0%,#ff4d35_48%,#ffb000_100%)] p-[14px] shadow-[0_24px_70px_rgba(255,91,56,0.22)] transition group-hover:scale-[1.02] group-focus-within:ring-4 group-focus-within:ring-[#ff7a1a]/30">
           <span
             className={`block size-full rounded-full bg-white ${
               isDragActive ? "ring-4 ring-[#2f9e44]/60" : ""
