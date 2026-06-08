@@ -61,11 +61,16 @@ async function createTestServer(rateLimit?: RateLimitConfig): Promise<TestServer
   };
 }
 
-function connectClient(port: number): ClientSocket {
+function connectClient(port: number, forwardedFor?: string): ClientSocket {
   return createClient(`http://127.0.0.1:${port}`, {
     forceNew: true,
     reconnection: false,
-    transports: ["websocket"]
+    transports: ["websocket"],
+    extraHeaders: forwardedFor
+      ? {
+          "x-forwarded-for": forwardedFor
+        }
+      : undefined
   });
 }
 
@@ -96,6 +101,37 @@ describe("socket room discovery", () => {
 
     expect(firstJoined.peers.map((item) => item.peerId)).toEqual(["peer-a000"]);
     expect(secondJoined.peers.map((item) => item.peerId)).toEqual(["peer-a000", "peer-b000"]);
+  });
+
+  it("scopes default nearby discovery by forwarded network address", async () => {
+    const first = connectClient(server.port, "203.0.113.10");
+    const second = connectClient(server.port, "203.0.113.10");
+    const farAway = connectClient(server.port, "198.51.100.44");
+    clients.push(first, second, farAway);
+
+    first.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "nearby", peer: peer("peer-a000") });
+    const firstJoined = await waitFor<{ roomId: string; peers: Peer[] }>(
+      first,
+      SERVER_EVENTS.ROOM_JOINED
+    );
+
+    second.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "nearby", peer: peer("peer-b000") });
+    const secondJoined = await waitFor<{ roomId: string; peers: Peer[] }>(
+      second,
+      SERVER_EVENTS.ROOM_JOINED
+    );
+
+    farAway.emit(CLIENT_EVENTS.ROOM_JOIN, { roomId: "nearby", peer: peer("peer-c000") });
+    const farAwayJoined = await waitFor<{ roomId: string; peers: Peer[] }>(
+      farAway,
+      SERVER_EVENTS.ROOM_JOINED
+    );
+
+    expect(firstJoined.roomId).toMatch(/^nearby-[a-f0-9]{16}$/);
+    expect(secondJoined.roomId).toBe(firstJoined.roomId);
+    expect(farAwayJoined.roomId).not.toBe(firstJoined.roomId);
+    expect(secondJoined.peers.map((item) => item.peerId)).toEqual(["peer-a000", "peer-b000"]);
+    expect(farAwayJoined.peers.map((item) => item.peerId)).toEqual(["peer-c000"]);
   });
 
   it("broadcasts peer join and leave events", async () => {

@@ -30,7 +30,7 @@ type UseSocketRoomOptions = {
   roomId?: string;
 };
 
-const DEFAULT_ROOM_ID = "local-room";
+const DEFAULT_ROOM_ID = "nearby";
 const DEFAULT_SIGNALING_URL = "http://localhost:4000";
 
 export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomState {

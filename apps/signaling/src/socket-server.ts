@@ -7,12 +7,14 @@ import {
   type EventErrorPayload,
   type Peer
 } from "@oppassum/shared";
+import { createHash } from "node:crypto";
 import type { Server, Socket } from "socket.io";
 
 import { DEFAULT_RATE_LIMIT, SocketRateLimiter, type RateLimitConfig } from "./rate-limiter.js";
 import { RoomService } from "./room-service.js";
 
 const MAX_SIGNAL_PAYLOAD_BYTES = 64 * 1024;
+const DEFAULT_DISCOVERY_ROOM_IDS = new Set(["local-room", "nearby"]);
 
 type SocketSecurityOptions = {
   rateLimit?: RateLimitConfig;
@@ -44,7 +46,8 @@ export function registerSocketHandlers(
         return;
       }
 
-      const { roomId, peer } = result.data;
+      const { roomId: requestedRoomId, peer } = result.data;
+      const roomId = resolveRoomId(socket, requestedRoomId);
       const joinResult = roomService.joinRoom(roomId, socket.id, peer);
       socket.join(roomId);
 
@@ -74,8 +77,9 @@ export function registerSocketHandlers(
       }
 
       const activeRoom = roomService.getSocketRoom(socket.id);
+      const requestedRoomId = resolveRoomId(socket, result.data.roomId);
 
-      if (activeRoom && activeRoom !== result.data.roomId) {
+      if (activeRoom && activeRoom !== requestedRoomId) {
         recordInvalidEvent(socket, rateLimiter);
         emitError(socket, "room_mismatch", "This device is not in that room.");
         return;
@@ -107,8 +111,9 @@ export function registerSocketHandlers(
 
       const activeRoom = roomService.getSocketRoom(socket.id);
       const activePeerId = roomService.getSocketPeerId(socket.id);
+      const signalRoomId = resolveRoomId(socket, signal.roomId);
 
-      if (activeRoom !== signal.roomId) {
+      if (activeRoom !== signalRoomId) {
         recordInvalidEvent(socket, rateLimiter);
         emitError(socket, "room_mismatch", "This device is not in that room.");
         return;
@@ -120,7 +125,7 @@ export function registerSocketHandlers(
         return;
       }
 
-      const targetSocketId = roomService.getPeerSocketId(signal.roomId, signal.toPeerId);
+      const targetSocketId = roomService.getPeerSocketId(signalRoomId, signal.toPeerId);
 
       if (!targetSocketId) {
         recordInvalidEvent(socket, rateLimiter);
@@ -128,7 +133,10 @@ export function registerSocketHandlers(
         return;
       }
 
-      io.to(targetSocketId).emit(SERVER_EVENTS.PEER_SIGNAL, signal);
+      io.to(targetSocketId).emit(SERVER_EVENTS.PEER_SIGNAL, {
+        ...signal,
+        roomId: signalRoomId
+      });
     });
 
     socket.on("disconnect", () => {
@@ -175,6 +183,28 @@ function leaveRoom(io: Server, socket: Socket, roomService: RoomService): void {
 
   socket.leave(left.roomId);
   io.to(left.roomId).emit(SERVER_EVENTS.PEER_LEFT, left);
+}
+
+function resolveRoomId(socket: Socket, requestedRoomId: string): string {
+  if (!DEFAULT_DISCOVERY_ROOM_IDS.has(requestedRoomId)) {
+    return requestedRoomId;
+  }
+
+  return `nearby-${hashNetworkAddress(getClientAddress(socket))}`;
+}
+
+function getClientAddress(socket: Socket): string {
+  const forwardedFor = socket.handshake.headers["x-forwarded-for"];
+  const firstForwardedAddress = Array.isArray(forwardedFor)
+    ? forwardedFor[0]
+    : forwardedFor?.split(",")[0];
+  const address = firstForwardedAddress?.trim() || socket.handshake.address || "unknown";
+
+  return address.replace(/^::ffff:/, "");
+}
+
+function hashNetworkAddress(address: string): string {
+  return createHash("sha256").update(address).digest("hex").slice(0, 16);
 }
 
 export function createPeer(overrides: Partial<Peer> = {}): Peer {
