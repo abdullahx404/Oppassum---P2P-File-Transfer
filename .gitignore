@@ -8,6 +8,7 @@ test-results/
 .env
 .env.*
 !.env.example
+!.env.production.example
 Guidelines/
 npm-debug.log*
 .DS_Store

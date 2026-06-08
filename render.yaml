@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: oppassum-signaling
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build --workspace @oppassum/signaling
+    startCommand: npm run start --workspace @oppassum/signaling
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_ORIGIN
+        sync: false
