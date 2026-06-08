@@ -573,7 +573,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
           if (state === "disconnected") {
             setPeerStatus(peerId, "disconnected");
             failPeerTransfers(peerId, {
-              title: "Peer disconnected",
+              title: "Peer Disconnected",
               detail: "The other device disconnected before the transfer completed.",
               canRetry: true
             });
@@ -788,7 +788,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     for (const [peerId, session] of sessions.current) {
       if (!knownPeerIds.has(peerId)) {
         failPeerTransfers(peerId, {
-          title: "Peer disconnected",
+          title: "Peer Disconnected",
           detail: "The other device left the room before the transfer completed.",
           canRetry: true
         });

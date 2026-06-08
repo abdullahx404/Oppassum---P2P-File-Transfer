@@ -70,7 +70,7 @@ describe("TransferSurface", () => {
         roomState: createFallbackRoomState({ status: "connected", peers: [] })
       })
     );
-    expect(screen.getByText("No devices connected yet")).toBeInTheDocument();
+    expect(screen.getByText("No Devices Connected Yet")).toBeInTheDocument();
 
     rerender(React.createElement(TransferSurface, { roomState: previewRoomState }));
     expect(screen.getByText("4 devices connected")).toBeInTheDocument();
@@ -89,7 +89,7 @@ describe("TransferSurface", () => {
     });
 
     expect(screen.getByLabelText("Selected file manifest")).toBeInTheDocument();
-    expect(screen.getByText("1 file selected")).toBeInTheDocument();
+    expect(screen.getByText("1 File Selected")).toBeInTheDocument();
     expect(screen.getByText(/5 B ready to share. Click Send on a device to share with./)).toBeInTheDocument();
     expect(screen.getAllByText("Send").length).toBeGreaterThan(0);
   });
@@ -110,14 +110,14 @@ describe("TransferSurface", () => {
       }
     });
 
-    expect(screen.getByText("1 folder selected")).toBeInTheDocument();
+    expect(screen.getByText("1 Folder Selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload as ZIP" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload as files" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Upload as ZIP" }));
 
     await waitFor(() => {
-      expect(screen.getByText("1 file selected")).toBeInTheDocument();
+      expect(screen.getByText("1 File Selected")).toBeInTheDocument();
     });
   });
 

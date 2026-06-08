@@ -68,7 +68,7 @@ export function UploadTarget({
           <Upload aria-hidden="true" className="size-8 text-[#ff5b38]" />
           <span className="text-2xl font-semibold leading-tight text-[#3c4043]">Upload Files</span>
           <span className="text-sm font-semibold text-[#3c4043]">
-            {selectedCount > 0 ? `${selectedCount} selected` : "Click Here"}
+            {selectedCount > 0 ? `${selectedCount} Selected` : "Click Here"}
           </span>
         </span>
       </label>

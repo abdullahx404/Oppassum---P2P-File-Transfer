@@ -31,20 +31,20 @@ test("transfers small and medium files as WebRTC chunks and rebuilds download bl
     }
   ]);
 
-  await expect(firstPage.getByText("2 files selected")).toBeVisible();
+  await expect(firstPage.getByText("2 Files Selected")).toBeVisible();
   await firstPage.getByRole("button", { name: /, Ready/ }).first().click();
 
   await expect(secondPage.getByText("small.txt")).toBeVisible({ timeout: 20_000 });
   await secondPage.getByRole("button", { name: "Accept" }).click();
 
-  await expect(firstPage.getByText("Sent files")).toBeVisible({ timeout: 30_000 });
-  const receivedFilesRegion = secondPage.getByRole("region", { name: "Received files" });
+  await expect(firstPage.getByText("Sent Files")).toBeVisible({ timeout: 30_000 });
+  const receivedFilesRegion = secondPage.getByRole("region", { name: "Received Files" });
   await expect(receivedFilesRegion).toBeVisible({ timeout: 30_000 });
   await expect(receivedFilesRegion.getByRole("link", { name: /small.txt/ })).toBeVisible();
   await expect(receivedFilesRegion.getByRole("link", { name: /medium.txt/ })).toBeVisible();
 
   const received = await secondPage.evaluate(async () => {
-    const links = [...document.querySelectorAll<HTMLAnchorElement>("[aria-label='Received files'] a")];
+    const links = [...document.querySelectorAll<HTMLAnchorElement>("[aria-label='Received Files'] a")];
 
     return Promise.all(
       links.map(async (link) => ({

@@ -188,7 +188,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               <img src="/oppassum-logo.png" alt="" aria-hidden="true" className="size-12 object-contain" />
             </span>
             <p className="max-w-sm text-base font-medium text-[#3c4043]">
-              The easiest way to transfer data across devices
+              The Simpliest Peer to Peer Data Transfer Across Devices
             </p>
             <p className="text-sm font-medium text-[#ff5b38]">{roomStatusText}</p>
             <p
@@ -218,7 +218,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               >
                 <p className="font-semibold text-[#202124]">
                   {fileTransfer.pendingFolderSelection.folderRoots.length}{" "}
-                  {fileTransfer.pendingFolderSelection.folderRoots.length === 1 ? "folder" : "folders"} selected
+                  {fileTransfer.pendingFolderSelection.folderRoots.length === 1 ? "Folder" : "Folders"} Selected
                 </p>
                 <p className="mt-1 text-[#6b7280]">
                   {formatBytes(fileTransfer.pendingFolderSelection.totalBytes)} ready. Upload as one ZIP
@@ -330,7 +330,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             ) : null}
             {peerConnection.outgoingStatus ? (
               <TransferDialog
-                title="Transfer request"
+                title="Transfer Request"
                 statusText={getOutgoingStatusText(peerConnection.outgoingStatus)}
               />
             ) : null}
@@ -341,10 +341,10 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           <section
             id="received-files"
             className="relative z-20 mt-5 w-full max-w-[1120px] rounded-lg bg-white/96 p-4 shadow-[0_18px_48px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
-            aria-label="Received files"
+            aria-label="Received Files"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-[#202124]">Received files</p>
+              <p className="text-sm font-semibold text-[#202124]">Received Files</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
@@ -352,14 +352,14 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   onClick={() => downloadFiles(peerConnection.receivedFiles)}
                 >
                   <Download aria-hidden="true" className="size-4" />
-                  Download all
+                  Download All
                 </button>
                 <button
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                   type="button"
                   onClick={peerConnection.clearReceivedFiles}
                 >
-                  Clear downloads
+                  Clear Downloads
                 </button>
               </div>
             </div>
@@ -388,7 +388,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         ) : null}
 
         <div className="sr-only" aria-live="polite">
-          Drag-over state active. File selected. Sending progress. Receiving progress. Peer disconnected
+          Drag-over state active. File selected. Sending progress. Receiving progress. Peer Disconnected
           mid-transfer.
         </div>
       </section>
@@ -493,11 +493,11 @@ function getProgressTitle(progress: {
   fileName: string;
 }): string {
   if (progress.status === "completed") {
-    return progress.direction === "sending" ? "Sent files" : "Received files";
+    return progress.direction === "sending" ? "Sent Files" : "Received Files";
   }
 
   if (progress.status === "failed") {
-    return "Transfer failed";
+    return "Transfer Failed";
   }
 
   return `${progress.direction === "sending" ? "Sending" : "Receiving"} ${progress.fileName}`;
@@ -546,7 +546,7 @@ function getConnectionStatusText(
   }
 
   if (status === "disconnected") {
-    return "Peer disconnected";
+    return "Peer Disconnected";
   }
 
   return "";
@@ -566,7 +566,7 @@ function getRoomStatusText(roomState: SocketRoomState): string {
   }
 
   if (roomState.peers.length === 0) {
-    return "No devices connected yet";
+    return "No Devices Connected Yet";
   }
 
   return `${roomState.peers.length} ${roomState.peers.length === 1 ? "device" : "devices"} connected`;

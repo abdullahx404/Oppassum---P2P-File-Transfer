@@ -26,7 +26,7 @@ describe("file manifest helpers", () => {
       lastModified: 10
     });
     expect(manifest.folderRoots).toEqual([]);
-    expect(getTransferSelectionLabel(manifest)).toBe("2 files selected");
+    expect(getTransferSelectionLabel(manifest)).toBe("2 Files Selected");
   });
 
   it("preserves selected folder roots and relative paths", () => {
@@ -47,8 +47,8 @@ describe("file manifest helpers", () => {
       "Trip/photos/photo.jpg",
       "Trip/notes/note.txt"
     ]);
-    expect(getTransferSelectionLabel(manifest)).toBe("1 folder selected");
-    expect(getTransferItemLabel(manifest)).toBe("1 folder");
+    expect(getTransferSelectionLabel(manifest)).toBe("1 Folder Selected");
+    expect(getTransferItemLabel(manifest)).toBe("1 Folder");
     expect(getTransferDisplayName(manifest)).toBe("Trip");
   });
 

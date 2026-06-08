@@ -32,7 +32,7 @@ test("shows rejection clearly and lets the sender retry the same selection", asy
 
   await expect(secondPage.getByText("retry-me.txt")).toBeVisible({ timeout: 20_000 });
   await secondPage.getByRole("button", { name: "Accept" }).click();
-  await expect(firstPage.getByText("Sent files")).toBeVisible({ timeout: 30_000 });
+  await expect(firstPage.getByText("Sent Files")).toBeVisible({ timeout: 30_000 });
 
   await firstContext.close();
   await secondContext.close();
@@ -65,7 +65,7 @@ test("reports a peer disconnect during a pending transfer without a stuck state"
   await expect(secondPage.getByText("disconnect.txt")).toBeVisible({ timeout: 20_000 });
   await secondContext.close();
 
-  await expect(firstPage.getByLabel("Peer disconnected")).toBeVisible({ timeout: 20_000 });
+  await expect(firstPage.getByLabel("Peer Disconnected")).toBeVisible({ timeout: 20_000 });
   await expect(firstPage.getByRole("button", { name: "Retry" })).toBeVisible();
 
   await firstContext.close();

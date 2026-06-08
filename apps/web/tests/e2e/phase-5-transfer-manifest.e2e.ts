@@ -23,7 +23,7 @@ test("sender and receiver agree on a transfer manifest before file bytes are sen
     buffer: Buffer.from("metadata only")
   });
 
-  await expect(firstPage.getByText("1 file selected")).toBeVisible();
+  await expect(firstPage.getByText("1 File Selected")).toBeVisible();
   await firstPage.getByRole("button", { name: /, Ready/ }).first().click();
 
   await expect(secondPage.getByText("manifest-only.txt")).toBeVisible({ timeout: 20_000 });

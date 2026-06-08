@@ -48,11 +48,11 @@ export function getTransferSelectionLabel(manifest: TransferManifest): string {
 
   if (folderRoots.length > 0) {
     return `${folderRoots.length} ${
-      folderRoots.length === 1 ? "folder" : "folders"
-    } selected`;
+      folderRoots.length === 1 ? "Folder" : "Folders"
+    } Selected`;
   }
 
-  return `${manifest.files.length} ${manifest.files.length === 1 ? "file" : "files"} selected`;
+  return `${manifest.files.length} ${manifest.files.length === 1 ? "File" : "Files"} Selected`;
 }
 
 export function getTransferItemLabel(manifest: TransferManifest): string {
@@ -60,11 +60,11 @@ export function getTransferItemLabel(manifest: TransferManifest): string {
 
   if (folderRoots.length > 0) {
     return `${folderRoots.length} ${
-      folderRoots.length === 1 ? "folder" : "folders"
+      folderRoots.length === 1 ? "Folder" : "Folders"
     }`;
   }
 
-  return `${manifest.files.length} ${manifest.files.length === 1 ? "file" : "files"}`;
+  return `${manifest.files.length} ${manifest.files.length === 1 ? "File" : "Files"}`;
 }
 
 export function getTransferDisplayName(manifest: TransferManifest, fallback = "Transfer"): string {
