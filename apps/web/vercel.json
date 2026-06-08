@@ -1,5 +1,5 @@
 {
   "framework": "nextjs",
-  "installCommand": "cd ../.. && npm install",
+  "installCommand": "cd ../.. && npm install --include=optional",
   "buildCommand": "cd ../.. && npm run build --workspace @oppassum/shared && npm run build --workspace @oppassum/web"
 }

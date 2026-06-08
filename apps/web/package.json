@@ -34,6 +34,8 @@
     "tailwindcss": "^4.1.10"
   },
   "optionalDependencies": {
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.0",
+    "@tailwindcss/oxide-linux-x64-musl": "4.3.0",
     "@next/swc-win32-x64-msvc": "^15.5.19"
   }
 }
