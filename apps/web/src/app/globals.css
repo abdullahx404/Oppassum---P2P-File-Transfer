@@ -83,6 +83,23 @@ label {
   animation: attention-shake 380ms ease-in-out;
 }
 
+.info-expand {
+  animation: info-expand 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: calc(100% - 2rem) 2rem;
+}
+
+@keyframes info-expand {
+  0% {
+    clip-path: circle(1.5rem at calc(100% - 2.5rem) 3rem);
+    opacity: 0.92;
+  }
+
+  100% {
+    clip-path: circle(150% at calc(100% - 2.5rem) 3rem);
+    opacity: 1;
+  }
+}
+
 @keyframes attention-shake {
   0%,
   100% {
@@ -129,4 +146,42 @@ label {
   border: 0;
   opacity: 0;
   pointer-events: none;
+}
+
+.theme-dark {
+  background: #0b0d12 !important;
+  color: #f8fafc !important;
+}
+
+.theme-dark [class*="bg-[#fbfbfc]"] {
+  background-color: #0b0d12 !important;
+}
+
+.theme-dark [class*="bg-white"] {
+  background-color: rgba(20, 24, 31, 0.94) !important;
+}
+
+.theme-dark [class*="bg-[#f6f7f9]"],
+.theme-dark [class*="bg-[#fff4ed]"],
+.theme-dark [class*="bg-[#fffaf7]"] {
+  background-color: rgba(31, 36, 46, 0.96) !important;
+}
+
+.theme-dark [class*="text-[#202124]"],
+.theme-dark [class*="text-[#3c4043]"] {
+  color: #f8fafc !important;
+}
+
+.theme-dark [class*="text-[#5f6673]"],
+.theme-dark [class*="text-[#6b7280]"] {
+  color: #cbd5e1 !important;
+}
+
+.theme-dark [class*="ring-[#eef0f4]"],
+.theme-dark [class*="ring-[#e4e8f0]"] {
+  --tw-ring-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.theme-dark .radar-rings span {
+  border-color: rgba(255, 122, 26, 0.16);
 }

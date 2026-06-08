@@ -8,8 +8,10 @@ import {
   Info,
   Laptop,
   Monitor,
+  Moon,
   RotateCcw,
   Smartphone,
+  Sun,
   Tablet,
   X
 } from "lucide-react";
@@ -50,12 +52,31 @@ const mobileDeviceIcons = {
   unknown: HelpCircle
 } satisfies Record<ReturnType<typeof toDeviceKind>, typeof Laptop>;
 
+const socialLinks = [
+  {
+    label: "GitHub",
+    href: "https://github.com/abdullahx404/Oppassum---P2P-File-Transfer",
+    icon: "/github-logo.png"
+  },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/abdullah.wtf/",
+    icon: "/insta-logo.webp"
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/abdullahzia-linked",
+    icon: "/linkedin-logo.webp"
+  }
+] as const;
+
 export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const liveRoomState = useSocketRoom({ enabled: !roomState });
   const currentRoom = roomState ?? liveRoomState;
   const peerConnection = useWebRtcPeer(currentRoom);
   const fileTransfer = useFileTransfer();
   const [isInfoOpen, setInfoOpen] = React.useState(false);
+  const [theme, setTheme] = React.useState<"light" | "dark">("light");
   const [deviceNameDraft, setDeviceNameDraft] = React.useState(currentRoom.self.displayName);
   const [selectionPrompt, setSelectionPrompt] = React.useState<string | undefined>();
   const [selectionPromptShakeKey, setSelectionPromptShakeKey] = React.useState(0);
@@ -71,6 +92,18 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     peerConnection.statuses
   );
   const incomingSenderName = getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device";
+
+  React.useEffect(() => {
+    const savedTheme = window.localStorage.getItem("oppassum.theme");
+
+    if (savedTheme === "dark") {
+      setTheme("dark");
+    }
+  }, []);
+
+  React.useEffect(() => {
+    window.localStorage.setItem("oppassum.theme", theme);
+  }, [theme]);
 
   React.useEffect(() => {
     setDeviceNameDraft(currentRoom.self.displayName);
@@ -99,6 +132,10 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     currentRoom.updateDeviceName?.(deviceNameDraft);
   }, [currentRoom, deviceNameDraft]);
 
+  const toggleTheme = React.useCallback(() => {
+    setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }, []);
+
   const handlePeerSelect = React.useCallback(
     (peer: Peer) => {
       if (!fileTransfer.manifest) {
@@ -114,69 +151,45 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   );
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124]">
+    <main className={`relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124] ${theme === "dark" ? "theme-dark" : ""}`}>
       <header className="relative z-20 flex items-center justify-between gap-4 px-5 py-5 sm:px-8">
         <BrandMark />
-        <div className="relative">
+        <div className="relative flex flex-col items-center gap-2">
           <button
             className="flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
             type="button"
             aria-label="Information"
             aria-expanded={isInfoOpen}
             onClick={() => setInfoOpen((current) => !current)}
-            onMouseEnter={() => setInfoOpen(true)}
           >
             <Info aria-hidden="true" className="size-6" />
           </button>
+          <button
+            className="flex h-7 w-12 items-center rounded-full bg-white/80 p-1 shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+            type="button"
+            aria-label={theme === "dark" ? "Switch To Light Theme" : "Switch To Dark Theme"}
+            aria-pressed={theme === "dark"}
+            onClick={toggleTheme}
+          >
+            <span
+              className={`flex size-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-white transition ${
+                theme === "dark" ? "translate-x-5" : "translate-x-0"
+              }`}
+            >
+              {theme === "dark" ? (
+                <Moon aria-hidden="true" className="size-3" />
+              ) : (
+                <Sun aria-hidden="true" className="size-3" />
+              )}
+            </span>
+          </button>
           {isInfoOpen ? (
-            <>
-              <button
-                className="fixed inset-0 z-30 cursor-default bg-transparent"
-                type="button"
-                aria-label="Close information"
-                onClick={() => setInfoOpen(false)}
-              />
-              <section
-                className="absolute right-0 top-12 z-40 w-[min(90vw,320px)] rounded-lg bg-white p-4 text-sm shadow-[0_24px_70px_rgba(32,33,36,0.16)] ring-1 ring-[#e4e8f0]"
-                aria-label="How to use Oppassum"
-                onMouseLeave={() => setInfoOpen(false)}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <p className="font-semibold text-[#202124]">How to use</p>
-                  <button
-                    className="flex size-7 items-center justify-center rounded-full text-[#6b7280] outline-none hover:bg-[#f6f7f9] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
-                    type="button"
-                    aria-label="Close"
-                    onClick={() => setInfoOpen(false)}
-                  >
-                    <X aria-hidden="true" className="size-4" />
-                  </button>
-                </div>
-                <ol className="mt-3 space-y-2 text-[#5f6673]">
-                  <li>1. Open this page on both devices.</li>
-                  <li>2. Select files or a folder.</li>
-                  <li>3. Click Send on the receiving device.</li>
-                  <li>4. Accept the request on the other device.</li>
-                  <li>5. Download each received file.</li>
-                  <li>6. Keep both devices awake. Do not close this website, lock your phone, or turn off the screen while transferring.</li>
-                </ol>
-                <label className="mt-4 block text-xs font-semibold text-[#3c4043]">
-                  This device name
-                  <input
-                    className="mt-2 h-10 w-full rounded-lg border border-[#ffd6c2] px-3 text-sm font-medium outline-none focus:border-[#ff7a1a] focus:ring-2 focus:ring-[#ff7a1a]/20"
-                    value={deviceNameDraft}
-                    onChange={(event) => setDeviceNameDraft(event.currentTarget.value)}
-                    onBlur={saveDeviceName}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        saveDeviceName();
-                        setInfoOpen(false);
-                      }
-                    }}
-                  />
-                </label>
-              </section>
-            </>
+            <InfoOverlay
+              deviceNameDraft={deviceNameDraft}
+              onClose={() => setInfoOpen(false)}
+              onDeviceNameChange={setDeviceNameDraft}
+              onSaveDeviceName={saveDeviceName}
+            />
           ) : null}
         </div>
       </header>
@@ -524,6 +537,94 @@ function downloadFiles(files: ReceivedTransferFile[]): void {
     link.click();
     link.remove();
   }
+}
+
+function InfoOverlay({
+  deviceNameDraft,
+  onClose,
+  onDeviceNameChange,
+  onSaveDeviceName
+}: {
+  deviceNameDraft: string;
+  onClose: () => void;
+  onDeviceNameChange: (value: string) => void;
+  onSaveDeviceName: () => void;
+}) {
+  return (
+    <section
+      className="info-expand fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-5 py-8 text-white"
+      aria-label="How to use Oppassum"
+    >
+      <button
+        className="absolute right-5 top-5 flex size-11 items-center justify-center rounded-full text-white/80 outline-none transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white"
+        type="button"
+        aria-label="Close information"
+        onClick={onClose}
+      >
+        <X aria-hidden="true" className="size-8" />
+      </button>
+      <div className="flex w-full max-w-xl flex-col items-center text-center">
+        <img
+          src="/oppassum-logo-white.png"
+          alt=""
+          aria-hidden="true"
+          className="size-20 object-contain sm:size-24"
+        />
+        <img
+          src="/oppassum-white.png"
+          alt="Oppassum"
+          className="mt-4 h-12 w-auto object-contain sm:h-16"
+        />
+        <div className="mt-8 w-full rounded-lg bg-white/10 p-5 text-left ring-1 ring-white/20 backdrop-blur">
+          <p className="text-lg font-bold text-white">Instructions</p>
+          <ol className="mt-3 space-y-2 text-sm leading-6 text-white/90 sm:text-base">
+            <li>1. Open this page on both devices.</li>
+            <li>2. Select files or a folder.</li>
+            <li>3. Click Send on the receiving device.</li>
+            <li>4. Accept the request on the other device.</li>
+            <li>5. Keep both devices awake until the transfer finishes.</li>
+          </ol>
+        </div>
+        <div className="mt-5 grid w-full gap-3 rounded-lg bg-white/10 p-4 text-left ring-1 ring-white/20 backdrop-blur sm:grid-cols-[1fr_auto] sm:items-end">
+          <label className="block text-sm font-semibold text-white">
+            This Device Name
+            <input
+              className="mt-2 h-11 w-full rounded-lg border border-white/30 bg-white/15 px-3 text-sm font-medium text-white outline-none placeholder:text-white/60 focus:border-white focus:ring-2 focus:ring-white/30"
+              placeholder="Enter device name"
+              value={deviceNameDraft}
+              onChange={(event) => onDeviceNameChange(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  onSaveDeviceName();
+                }
+              }}
+            />
+          </label>
+          <button
+            className="inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-bold text-[#ff5b38] outline-none transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(255,255,255,0.2)] focus-visible:ring-2 focus-visible:ring-white"
+            type="button"
+            onClick={onSaveDeviceName}
+          >
+            Save
+          </button>
+        </div>
+        <div className="mt-6 flex items-center justify-center gap-5">
+          {socialLinks.map((link) => (
+            <a
+              key={link.label}
+              className="flex size-11 items-center justify-center rounded-full bg-white/12 p-2 outline-none ring-1 ring-white/20 transition hover:-translate-y-1 hover:scale-110 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white"
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={link.label}
+            >
+              <img src={link.icon} alt="" aria-hidden="true" className="size-full object-contain" />
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function getPeerName(roomState: SocketRoomState, peerId: string | undefined): string | undefined {
