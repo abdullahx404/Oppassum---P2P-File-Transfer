@@ -234,7 +234,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             ) : null}
             {fileTransfer.manifest ? (
               <div
-                className="relative z-20 rounded-lg bg-white/96 px-4 py-3 text-sm shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4]"
+                className="relative z-20 w-full max-w-xl rounded-lg bg-white/96 px-4 py-3 text-sm shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4]"
                 aria-label="Selected file manifest"
               >
                 <p className="font-semibold text-[#202124]">
@@ -255,7 +255,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               </div>
             ) : null}
             {currentRoom.peers.length > 0 ? (
-              <div className="relative z-20 grid w-full max-w-md justify-items-center gap-2 md:hidden" aria-label="Nearby devices">
+              <div className="relative z-20 grid w-full max-w-xl justify-items-center gap-2 md:hidden" aria-label="Nearby devices">
                 {currentRoom.peers.map((peer) => (
                   <MobilePeerButton
                     key={peer.peerId}
@@ -271,7 +271,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         </div>
 
         {peerConnection.transferProgress || peerConnection.outgoingStatus ? (
-          <div className="relative z-20 mt-6 grid w-full max-w-[1120px] gap-4">
+          <div className="relative z-20 mt-6 grid w-full max-w-xl gap-4">
             {peerConnection.transferProgress ? (
               <ProgressPanel
                 title={getProgressTitle(peerConnection.transferProgress)}
@@ -337,13 +337,15 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
 
       {peerConnection.incomingOffer ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#202124]/20 px-4 backdrop-blur-sm">
-          <TransferDialog
-            manifest={peerConnection.incomingOffer.manifest}
-            senderName={incomingSenderName}
-            title="Incoming files"
-            onAccept={peerConnection.acceptIncomingTransfer}
-            onReject={peerConnection.rejectIncomingTransfer}
-          />
+          <div className="w-full max-w-xl">
+            <TransferDialog
+              manifest={peerConnection.incomingOffer.manifest}
+              senderName={incomingSenderName}
+              title="Incoming files"
+              onAccept={peerConnection.acceptIncomingTransfer}
+              onReject={peerConnection.rejectIncomingTransfer}
+            />
+          </div>
         </div>
       ) : null}
     </main>
@@ -534,7 +536,7 @@ function StatusNotice({
 
   return (
     <section
-      className="relative z-20 w-full max-w-md rounded-lg bg-white/96 px-4 py-3 text-left shadow-[0_14px_36px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
+      className="relative z-20 w-full max-w-xl rounded-lg bg-white/96 px-4 py-3 text-left shadow-[0_14px_36px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
       aria-label={title}
     >
       <div className="flex items-start gap-3">

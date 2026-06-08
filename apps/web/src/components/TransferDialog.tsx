@@ -26,7 +26,7 @@ export function TransferDialog({
 
   return (
     <section
-      className="w-full max-w-[360px] rounded-lg bg-white/94 p-4 shadow-[0_18px_48px_rgba(32,33,36,0.1)] ring-1 ring-[#eef0f4]"
+      className="w-full rounded-lg bg-white/94 p-4 shadow-[0_18px_48px_rgba(32,33,36,0.1)] ring-1 ring-[#eef0f4]"
       aria-label="Incoming transfer preview"
     >
       <div className="flex items-center gap-3">
