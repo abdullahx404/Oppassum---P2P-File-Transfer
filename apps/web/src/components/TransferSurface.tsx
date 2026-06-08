@@ -1,7 +1,7 @@
 "use client";
 
 import type { DeviceType } from "@oppassum/shared";
-import { AlertTriangle, Download, Info, Radio, RotateCcw, X } from "lucide-react";
+import { AlertTriangle, Download, Info, RotateCcw, X } from "lucide-react";
 import React from "react";
 
 import { BrandMark } from "./BrandMark";
@@ -70,7 +70,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         <BrandMark />
         <div className="relative">
           <button
-            className="flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#eef0f4] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+            className="flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
             type="button"
             aria-label="Information"
             aria-expanded={isInfoOpen}
@@ -95,7 +95,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-semibold text-[#202124]">How to use</p>
                   <button
-                    className="flex size-7 items-center justify-center rounded-full text-[#6b7280] outline-none hover:bg-[#f6f7f9] focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                    className="flex size-7 items-center justify-center rounded-full text-[#6b7280] outline-none hover:bg-[#f6f7f9] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                     type="button"
                     aria-label="Close"
                     onClick={() => setInfoOpen(false)}
@@ -108,11 +108,12 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   <li>2. Select files or a folder.</li>
                   <li>3. Pick the receiving device.</li>
                   <li>4. Accept the request and download.</li>
+                  <li>5. Keep both devices awake. Do not close this website, lock your phone, or turn off the screen while transferring.</li>
                 </ol>
                 <label className="mt-4 block text-xs font-semibold text-[#3c4043]">
                   This device name
                   <input
-                    className="mt-2 h-10 w-full rounded-lg border border-[#dfe4ef] px-3 text-sm font-medium outline-none focus:border-[#5b82f6] focus:ring-2 focus:ring-[#5b82f6]/20"
+                    className="mt-2 h-10 w-full rounded-lg border border-[#ffd6c2] px-3 text-sm font-medium outline-none focus:border-[#ff7a1a] focus:ring-2 focus:ring-[#ff7a1a]/20"
                     value={deviceNameDraft}
                     onChange={(event) => setDeviceNameDraft(event.currentTarget.value)}
                     onBlur={saveDeviceName}
@@ -159,13 +160,13 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           />
 
           <div className="mt-8 flex flex-col items-center gap-2 text-center">
-            <span className="flex size-16 items-center justify-center rounded-full text-[#5b82f6] ring-1 ring-[#eef0f4]">
-              <Radio aria-hidden="true" className="size-10" strokeWidth={2.4} />
+            <span className="flex size-16 items-center justify-center rounded-full bg-white text-[#ff5b38] shadow-[0_14px_40px_rgba(255,91,56,0.12)] ring-1 ring-[#ffe0cf]">
+              <img src="/oppassum-logo.png" alt="" aria-hidden="true" className="size-12 object-contain" />
             </span>
             <p className="max-w-sm text-base font-medium text-[#3c4043]">
               The easiest way to transfer data across devices
             </p>
-            <p className="text-sm font-medium text-[#5b82f6]">{roomStatusText}</p>
+            <p className="text-sm font-medium text-[#ff5b38]">{roomStatusText}</p>
             <p
               className="min-h-5 text-sm font-semibold text-[#2f9e44]"
               aria-live="polite"
@@ -191,7 +192,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 action={
                   peerConnection.transferError.canRetry ? (
                     <button
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#5b82f6] px-3 text-sm font-semibold text-white outline-none transition hover:bg-[#3658b6] focus-visible:ring-2 focus-visible:ring-[#5b82f6] focus-visible:ring-offset-2"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
                       type="button"
                       onClick={() => {
                         void peerConnection.retryLastTransfer();
@@ -218,7 +219,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   share with.
                 </p>
                 <button
-                  className="mt-2 text-sm font-semibold text-[#5b82f6] outline-none focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                  className="mt-2 text-sm font-semibold text-[#ff5b38] outline-none focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                   type="button"
                   onClick={fileTransfer.clearFiles}
                 >
@@ -231,7 +232,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 {currentRoom.peers.map((peer) => (
                   <button
                     key={peer.peerId}
-                    className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-white/94 px-4 text-left text-sm font-semibold text-[#202124] shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4] outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                    className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-white/94 px-4 text-left text-sm font-semibold text-[#202124] shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#ffe0cf] outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                     type="button"
                     aria-label={`${peer.displayName}, ${getPeerStatusLabel(peerConnection.statuses[peer.peerId])}`}
                     onClick={() => {
@@ -282,7 +283,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-semibold text-[#202124]">Received files</p>
               <button
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                 type="button"
                 onClick={peerConnection.clearReceivedFiles}
               >
@@ -293,7 +294,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               {peerConnection.receivedFiles.map((file) => (
                 <a
                   key={`${file.id}-${file.url}`}
-                  className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[#f8fafc] px-3 py-2 text-sm font-medium text-[#3c4043] outline-none ring-1 ring-[#eef0f4] transition hover:bg-[#f2f5ff] focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                  className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[#fffaf7] px-3 py-2 text-sm font-medium text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-[#fff4ed] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                   href={file.url}
                   download={file.relativePath ?? file.name}
                 >
@@ -301,7 +302,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                     <span className="block truncate">{file.relativePath ?? file.name}</span>
                     <span className="block text-xs text-[#6b7280]">{formatBytes(file.size)}</span>
                   </span>
-                  <span className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#5b82f6] px-3 py-2 text-xs font-semibold text-white">
+                  <span className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 py-2 text-xs font-semibold text-white">
                     <Download aria-hidden="true" className="size-4" />
                     Download
                   </span>

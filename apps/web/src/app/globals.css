@@ -3,6 +3,10 @@
 :root {
   color: #202124;
   background: #fbfbfc;
+  --oppassum-pink: #f2055c;
+  --oppassum-coral: #ff4d35;
+  --oppassum-orange: #ff7a1a;
+  --oppassum-gold: #ffb000;
 }
 
 * {
@@ -35,10 +39,10 @@ label {
 .radar-rings span {
   position: absolute;
   left: 50%;
-  top: 32%;
+  top: clamp(13rem, 32vh, 22rem);
   width: 18rem;
   aspect-ratio: 1;
-  border: 3px solid #eef0f4;
+  border: 3px solid rgba(255, 122, 26, 0.12);
   border-radius: 9999px;
   opacity: 0;
   transform: translate(-50%, -50%) scale(1);
@@ -75,7 +79,7 @@ label {
 
 @media (max-width: 640px) {
   .radar-rings span {
-    top: 28%;
+    top: 15rem;
     width: 14rem;
   }
 }

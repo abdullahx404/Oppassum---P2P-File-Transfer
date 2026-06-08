@@ -51,13 +51,15 @@ export function UploadTarget({
             }
           }}
         />
-        <span
-          className={`absolute inset-0 rounded-full border-[14px] shadow-[0_24px_70px_rgba(91,130,246,0.22)] transition group-hover:scale-[1.02] group-focus-within:ring-4 group-focus-within:ring-[#5b82f6]/30 ${
-            isDragActive ? "border-[#2f9e44]" : "border-[#5b82f6]"
-          }`}
-        />
+        <span className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,#f2055c_0%,#ff4d35_48%,#ffb000_100%)] p-[14px] shadow-[0_24px_70px_rgba(255,91,56,0.22)] transition group-hover:scale-[1.02] group-focus-within:ring-4 group-focus-within:ring-[#ff7a1a]/30">
+          <span
+            className={`block size-full rounded-full bg-white ${
+              isDragActive ? "ring-4 ring-[#2f9e44]/60" : ""
+            }`}
+          />
+        </span>
         <span className="relative z-10 flex flex-col items-center gap-2 px-8">
-          <Upload aria-hidden="true" className="size-8 text-[#5b82f6]" />
+          <Upload aria-hidden="true" className="size-8 text-[#ff5b38]" />
           <span className="text-2xl font-semibold leading-tight text-[#3c4043]">Upload Files</span>
           <span className="text-sm font-semibold text-[#3c4043]">
             {selectedCount > 0 ? `${selectedCount} selected` : "Click Here"}
@@ -65,7 +67,7 @@ export function UploadTarget({
         </span>
       </label>
 
-      <label className="mt-7 inline-flex h-12 cursor-pointer items-center justify-center gap-3 rounded-lg bg-white px-8 text-base font-medium text-[#3c4043] shadow-[0_18px_55px_rgba(32,33,36,0.1)] ring-1 ring-[#eef0f4] outline-none transition hover:-translate-y-0.5 hover:shadow-[0_22px_65px_rgba(32,33,36,0.13)] focus-within:ring-2 focus-within:ring-[#5b82f6]">
+      <label className="mt-7 inline-flex h-12 cursor-pointer items-center justify-center gap-3 rounded-lg bg-white px-8 text-base font-medium text-[#3c4043] shadow-[0_18px_55px_rgba(32,33,36,0.1)] ring-1 ring-[#ffe0cf] outline-none transition hover:-translate-y-0.5 hover:shadow-[0_22px_65px_rgba(255,91,56,0.14)] focus-within:ring-2 focus-within:ring-[#ff7a1a]">
         <input
           className="file-input-control"
           type="file"
@@ -78,7 +80,7 @@ export function UploadTarget({
             }
           }}
         />
-        <FolderUp aria-hidden="true" className="size-5 text-[#5b82f6]" />
+        <FolderUp aria-hidden="true" className="size-5 text-[#ff5b38]" />
         Upload Folder
       </label>
     </section>

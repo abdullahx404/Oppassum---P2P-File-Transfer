@@ -32,14 +32,16 @@ export function DevicePeerCard({
 
   return (
     <button
-      className={`absolute hidden w-[148px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 rounded-lg bg-white/88 px-4 py-3 text-center shadow-[0_18px_45px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4] backdrop-blur outline-none transition hover:-translate-y-[calc(50%+2px)] hover:shadow-[0_22px_55px_rgba(32,33,36,0.11)] focus-visible:ring-2 focus-visible:ring-[#5b82f6] md:flex ${positionClassName}`}
+      className={`absolute hidden w-[148px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 rounded-lg bg-white/88 px-4 py-3 text-center shadow-[0_18px_45px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] backdrop-blur outline-none transition hover:-translate-y-[calc(50%+2px)] hover:shadow-[0_22px_55px_rgba(255,91,56,0.13)] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] md:flex ${positionClassName}`}
       type="button"
       aria-label={`${name}, ${status}`}
       onClick={onSelect}
     >
       <span
         className={`flex size-12 items-center justify-center rounded-full ${
-          isSelected ? "bg-[#5b82f6] text-white" : "bg-[#f2f5ff] text-[#5b82f6]"
+          isSelected
+            ? "bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-white"
+            : "bg-[#fff4ed] text-[#ff5b38]"
         }`}
       >
         <DeviceIcon aria-hidden="true" className="size-6" />

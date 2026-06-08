@@ -30,7 +30,7 @@ export function TransferDialog({
       aria-label="Incoming transfer preview"
     >
       <div className="flex items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f2f5ff] text-[#5b82f6]">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#fff4ed] text-[#ff5b38]">
           <FileArchive aria-hidden="true" className="size-5" />
         </span>
         <div className="min-w-0">
@@ -43,7 +43,7 @@ export function TransferDialog({
       {manifest && onAccept && onReject ? (
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#2f9e44] px-3 text-sm font-semibold text-white outline-none transition hover:bg-[#26843a] focus-visible:ring-2 focus-visible:ring-[#2f9e44] focus-visible:ring-offset-2"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
             type="button"
             onClick={onAccept}
           >
@@ -51,7 +51,7 @@ export function TransferDialog({
             Accept
           </button>
           <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#5b82f6] focus-visible:ring-offset-2"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
             type="button"
             onClick={onReject}
           >

@@ -8,7 +8,7 @@ type ProgressPanelProps = {
 };
 
 export function ProgressPanel({ title, detail, value, tone = "blue" }: ProgressPanelProps) {
-  const color = tone === "green" ? "#2f9e44" : "#5b82f6";
+  const color = tone === "green" ? "#2f9e44" : "#ff5b38";
 
   return (
     <div className="min-w-0 rounded-lg bg-white/92 p-4 shadow-[0_18px_45px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]">
@@ -27,7 +27,13 @@ export function ProgressPanel({ title, detail, value, tone = "blue" }: ProgressP
         aria-valuemax={100}
         aria-valuenow={value}
       >
-        <div className="h-full rounded-full" style={{ width: `${value}%`, backgroundColor: color }} />
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${value}%`,
+            background: tone === "green" ? color : "linear-gradient(90deg,#f2055c,#ff7a1a,#ffb000)"
+          }}
+        />
       </div>
     </div>
   );
