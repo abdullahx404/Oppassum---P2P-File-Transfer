@@ -234,7 +234,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             ) : null}
             {fileTransfer.manifest ? (
               <div
-                className="rounded-lg bg-white/90 px-4 py-3 text-sm shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4]"
+                className="relative z-20 rounded-lg bg-white/96 px-4 py-3 text-sm shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4]"
                 aria-label="Selected file manifest"
               >
                 <p className="font-semibold text-[#202124]">
@@ -255,7 +255,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               </div>
             ) : null}
             {currentRoom.peers.length > 0 ? (
-              <div className="grid w-full max-w-sm gap-2 md:hidden" aria-label="Nearby devices">
+              <div className="relative z-20 grid w-full max-w-md justify-items-center gap-2 md:hidden" aria-label="Nearby devices">
                 {currentRoom.peers.map((peer) => (
                   <MobilePeerButton
                     key={peer.peerId}
@@ -271,7 +271,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         </div>
 
         {peerConnection.transferProgress || peerConnection.outgoingStatus ? (
-          <div className="mt-6 grid w-full max-w-[1120px] gap-4">
+          <div className="relative z-20 mt-6 grid w-full max-w-[1120px] gap-4">
             {peerConnection.transferProgress ? (
               <ProgressPanel
                 title={getProgressTitle(peerConnection.transferProgress)}
@@ -292,7 +292,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         {peerConnection.receivedFiles.length > 0 ? (
           <section
             id="received-files"
-            className="mt-5 w-full max-w-[1120px] rounded-lg bg-white/94 p-4 shadow-[0_18px_48px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
+            className="relative z-20 mt-5 w-full max-w-[1120px] rounded-lg bg-white/96 p-4 shadow-[0_18px_48px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
             aria-label="Received files"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -316,7 +316,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   <span className="min-w-0">
                     <span className="block truncate">{file.relativePath ?? file.name}</span>
                     <span className="block text-xs text-[#6b7280]">
-                      {formatBytes(file.size)} · Received {formatReceivedTime(file.receivedAt)}
+                      {formatBytes(file.size)} - Received {formatReceivedTime(file.receivedAt)}
                     </span>
                   </span>
                   <span className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-5 py-2 text-xs font-semibold text-white">
@@ -365,7 +365,7 @@ function MobilePeerButton({
 
   return (
     <button
-      className="flex min-h-20 items-center justify-between gap-3 rounded-lg bg-white/96 px-4 py-3 text-left text-sm font-semibold text-[#202124] shadow-[0_18px_44px_rgba(255,91,56,0.12)] ring-1 ring-[#ffd6c2] outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+      className="flex min-h-20 w-full items-center justify-between gap-3 rounded-lg bg-white/96 px-4 py-3 text-left text-sm font-semibold text-[#202124] shadow-[0_18px_44px_rgba(255,91,56,0.12)] ring-1 ring-[#ffd6c2] outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
       type="button"
       aria-label={`${peer.displayName}, ${status}${canSend ? ", Send" : ""}`}
       onClick={onSelect}
@@ -379,15 +379,11 @@ function MobilePeerButton({
           <span className="block truncate text-xs font-medium text-[#6b7280]">{status}</span>
         </span>
       </span>
-      <span
-        className={`inline-flex h-9 shrink-0 items-center justify-center rounded-lg px-3 text-xs font-semibold ${
-          canSend
-            ? "bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-white"
-            : "bg-[#fff4ed] text-[#ff5b38]"
-        }`}
-      >
-        {canSend ? "Send" : "Select files"}
-      </span>
+      {canSend ? (
+        <span className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-xs font-semibold text-white">
+          Send
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -538,7 +534,7 @@ function StatusNotice({
 
   return (
     <section
-      className="w-full max-w-md rounded-lg bg-white/94 px-4 py-3 text-left shadow-[0_14px_36px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
+      className="relative z-20 w-full max-w-md rounded-lg bg-white/96 px-4 py-3 text-left shadow-[0_14px_36px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
       aria-label={title}
     >
       <div className="flex items-start gap-3">

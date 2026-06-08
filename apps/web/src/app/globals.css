@@ -33,6 +33,7 @@ label {
   position: absolute;
   left: 50%;
   top: 6rem;
+  z-index: 0;
   width: 18rem;
   aspect-ratio: 1;
   overflow: visible;
