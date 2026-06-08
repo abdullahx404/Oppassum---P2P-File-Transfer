@@ -4,7 +4,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Oppassum",
-  description: "No-login peer-to-peer browser file sharing."
+  description: "No-login peer-to-peer browser file sharing.",
+  icons: {
+    icon: "/oppassum-logo.png",
+    apple: "/oppassum-logo.png"
+  }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
