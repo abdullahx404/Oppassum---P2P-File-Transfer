@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -94,7 +94,7 @@ describe("TransferSurface", () => {
     expect(screen.getAllByText("Send").length).toBeGreaterThan(0);
   });
 
-  it("shows folder selections as folders instead of only file contents", () => {
+  it("asks how to upload folders before sending", async () => {
     render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
     const input = screen.getByLabelText("Choose folder");
@@ -111,6 +111,14 @@ describe("TransferSurface", () => {
     });
 
     expect(screen.getByText("1 folder selected")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload as ZIP" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload as files" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Upload as ZIP" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("1 file selected")).toBeInTheDocument();
+    });
   });
 
   it("asks users to select files before choosing a device", () => {

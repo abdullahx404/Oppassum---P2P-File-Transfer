@@ -23,7 +23,7 @@ import { UploadTarget } from "./UploadTarget";
 import { useFileTransfer } from "../hooks/useFileTransfer";
 import { useWebRtcPeer, type PeerConnectionStatus } from "../hooks/useWebRtcPeer";
 import { createFallbackRoomState, useSocketRoom, type SocketRoomState } from "../hooks/useSocketRoom";
-import { getTransferPercent } from "../lib/chunked-transfer";
+import { getTransferPercent, type ReceivedTransferFile } from "../lib/chunked-transfer";
 import { formatBytes, getTransferSelectionLabel } from "../lib/files";
 import {
   getBrowserSupportState,
@@ -211,6 +211,55 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             {selectionPrompt ? (
               <StatusNotice title="Select files first" detail={selectionPrompt} tone="warning" />
             ) : null}
+            {fileTransfer.pendingFolderSelection ? (
+              <div
+                className="relative z-20 w-full max-w-xl rounded-lg bg-white/96 px-4 py-3 text-sm shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4]"
+                aria-label="Folder upload options"
+              >
+                <p className="font-semibold text-[#202124]">
+                  {fileTransfer.pendingFolderSelection.folderRoots.length}{" "}
+                  {fileTransfer.pendingFolderSelection.folderRoots.length === 1 ? "folder" : "folders"} selected
+                </p>
+                <p className="mt-1 text-[#6b7280]">
+                  {formatBytes(fileTransfer.pendingFolderSelection.totalBytes)} ready. Upload as one ZIP
+                  file or as separate files.
+                </p>
+                {fileTransfer.folderSelectionError ? (
+                  <p className="mt-2 text-xs font-semibold text-[#c92a2a]">
+                    {fileTransfer.folderSelectionError}
+                  </p>
+                ) : null}
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <button
+                    className="inline-flex h-10 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
+                    type="button"
+                    disabled={fileTransfer.isPreparingFolder}
+                    onClick={() => {
+                      void fileTransfer.confirmFolderSelection("zip");
+                    }}
+                  >
+                    Upload as ZIP
+                  </button>
+                  <button
+                    className="inline-flex h-10 items-center justify-center rounded-lg bg-[#fff4ed] px-3 text-sm font-semibold text-[#ff5b38] outline-none ring-1 ring-[#ffd6c2] transition hover:bg-[#ffeade] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] disabled:cursor-wait disabled:opacity-70"
+                    type="button"
+                    disabled={fileTransfer.isPreparingFolder}
+                    onClick={() => {
+                      void fileTransfer.confirmFolderSelection("files");
+                    }}
+                  >
+                    Upload as files
+                  </button>
+                  <button
+                    className="inline-flex h-10 items-center justify-center rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+                    type="button"
+                    onClick={fileTransfer.clearFiles}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : null}
             {peerConnection.transferError ? (
               <StatusNotice
                 title={peerConnection.transferError.title}
@@ -296,13 +345,23 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-semibold text-[#202124]">Received files</p>
-              <button
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
-                type="button"
-                onClick={peerConnection.clearReceivedFiles}
-              >
-                Clear downloads
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+                  type="button"
+                  onClick={() => downloadFiles(peerConnection.receivedFiles)}
+                >
+                  <Download aria-hidden="true" className="size-4" />
+                  Download all
+                </button>
+                <button
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+                  type="button"
+                  onClick={peerConnection.clearReceivedFiles}
+                >
+                  Clear downloads
+                </button>
+              </div>
             </div>
             <div className="mt-3 grid gap-2">
               {peerConnection.receivedFiles.map((file) => (
@@ -387,6 +446,19 @@ function MobilePeerButton({
       ) : null}
     </button>
   );
+}
+
+function downloadFiles(files: ReceivedTransferFile[]): void {
+  for (const file of files) {
+    const link = document.createElement("a");
+
+    link.href = file.url;
+    link.download = file.relativePath ?? file.name;
+    link.rel = "noopener";
+    document.body.append(link);
+    link.click();
+    link.remove();
+  }
 }
 
 function getPeerName(roomState: SocketRoomState, peerId: string | undefined): string | undefined {
