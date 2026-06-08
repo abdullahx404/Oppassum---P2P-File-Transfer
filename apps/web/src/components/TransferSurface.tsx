@@ -24,7 +24,7 @@ import { useFileTransfer } from "../hooks/useFileTransfer";
 import { useWebRtcPeer, type PeerConnectionStatus } from "../hooks/useWebRtcPeer";
 import { createFallbackRoomState, useSocketRoom, type SocketRoomState } from "../hooks/useSocketRoom";
 import { getTransferPercent } from "../lib/chunked-transfer";
-import { formatBytes } from "../lib/files";
+import { formatBytes, getTransferSelectionLabel } from "../lib/files";
 import {
   getBrowserSupportState,
   getLargeTransferWarning,
@@ -238,8 +238,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 aria-label="Selected file manifest"
               >
                 <p className="font-semibold text-[#202124]">
-                  {fileTransfer.manifest.files.length}{" "}
-                  {fileTransfer.manifest.files.length === 1 ? "file" : "files"} selected
+                  {getTransferSelectionLabel(fileTransfer.manifest)}
                 </p>
                 <p className="mt-1 text-[#6b7280]">
                   {formatBytes(fileTransfer.manifest.totalBytes)} ready to share. Click Send on a

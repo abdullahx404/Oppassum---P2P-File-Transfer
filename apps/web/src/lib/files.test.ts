@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { createTransferManifest, formatBytes } from "./files";
+import {
+  createTransferManifest,
+  formatBytes,
+  getTransferDisplayName,
+  getTransferItemLabel,
+  getTransferSelectionLabel
+} from "./files";
 
 describe("file manifest helpers", () => {
   it("creates metadata without reading file bytes", () => {
@@ -19,6 +25,31 @@ describe("file manifest helpers", () => {
       type: "text/plain",
       lastModified: 10
     });
+    expect(manifest.folderRoots).toEqual([]);
+    expect(getTransferSelectionLabel(manifest)).toBe("2 files selected");
+  });
+
+  it("preserves selected folder roots and relative paths", () => {
+    const photo = new File(["photo"], "photo.jpg", { type: "image/jpeg", lastModified: 10 });
+    const note = new File(["note"], "note.txt", { type: "text/plain", lastModified: 20 });
+
+    Object.defineProperty(photo, "webkitRelativePath", {
+      value: "Trip/photos/photo.jpg"
+    });
+    Object.defineProperty(note, "webkitRelativePath", {
+      value: "Trip/notes/note.txt"
+    });
+
+    const manifest = createTransferManifest([photo, note]);
+
+    expect(manifest.folderRoots).toEqual(["Trip"]);
+    expect(manifest.files.map((file) => file.relativePath)).toEqual([
+      "Trip/photos/photo.jpg",
+      "Trip/notes/note.txt"
+    ]);
+    expect(getTransferSelectionLabel(manifest)).toBe("1 folder selected");
+    expect(getTransferItemLabel(manifest)).toBe("1 folder");
+    expect(getTransferDisplayName(manifest)).toBe("Trip");
   });
 
   it("formats byte counts for transfer prompts", () => {

@@ -10,6 +10,7 @@ export type TransferFileMetadata = {
 export type TransferManifest = {
   transferId: string;
   files: TransferFileMetadata[];
+  folderRoots?: string[];
   totalBytes: number;
   createdAt: number;
 };
@@ -21,10 +22,10 @@ type FileWithRelativePath = File & {
 export function createTransferManifest(files: File[]): TransferManifest {
   const metadata = files.map((file, index) => {
     const fileWithPath = file as FileWithRelativePath;
-    const relativePath = fileWithPath.webkitRelativePath || undefined;
+    const relativePath = normalizeRelativePath(fileWithPath.webkitRelativePath);
 
     return {
-      id: `${index}-${file.name}-${file.size}-${file.lastModified}`,
+      id: `${index}-${relativePath ?? file.name}-${file.size}-${file.lastModified}`,
       name: file.name,
       size: file.size,
       type: file.type || "application/octet-stream",
@@ -36,9 +37,49 @@ export function createTransferManifest(files: File[]): TransferManifest {
   return {
     transferId: createTransferId(),
     files: metadata,
+    folderRoots: getFolderRoots(metadata),
     totalBytes: metadata.reduce((total, file) => total + file.size, 0),
     createdAt: Date.now()
   };
+}
+
+export function getTransferSelectionLabel(manifest: TransferManifest): string {
+  const folderRoots = getManifestFolderRoots(manifest);
+
+  if (folderRoots.length > 0) {
+    return `${folderRoots.length} ${
+      folderRoots.length === 1 ? "folder" : "folders"
+    } selected`;
+  }
+
+  return `${manifest.files.length} ${manifest.files.length === 1 ? "file" : "files"} selected`;
+}
+
+export function getTransferItemLabel(manifest: TransferManifest): string {
+  const folderRoots = getManifestFolderRoots(manifest);
+
+  if (folderRoots.length > 0) {
+    return `${folderRoots.length} ${
+      folderRoots.length === 1 ? "folder" : "folders"
+    }`;
+  }
+
+  return `${manifest.files.length} ${manifest.files.length === 1 ? "file" : "files"}`;
+}
+
+export function getTransferDisplayName(manifest: TransferManifest, fallback = "Transfer"): string {
+  const folderRoots = getManifestFolderRoots(manifest);
+  const firstFolderRoot = folderRoots[0];
+
+  if (firstFolderRoot && folderRoots.length === 1) {
+    return firstFolderRoot;
+  }
+
+  if (folderRoots.length > 1) {
+    return `${folderRoots.length} folders`;
+  }
+
+  return manifest.files[0]?.name ?? fallback;
 }
 
 export function formatBytes(bytes: number): string {
@@ -51,6 +92,30 @@ export function formatBytes(bytes: number): string {
   const value = bytes / 1024 ** unitIndex;
 
   return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
+}
+
+function normalizeRelativePath(path: string | undefined): string | undefined {
+  const parts = path
+    ?.replaceAll("\\", "/")
+    .split("/")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return parts && parts.length > 1 ? parts.join("/") : undefined;
+}
+
+function getFolderRoots(files: TransferFileMetadata[]): string[] {
+  return Array.from(
+    new Set(
+      files
+        .map((file) => file.relativePath?.split("/")[0])
+        .filter((root): root is string => Boolean(root))
+    )
+  ).sort((first, second) => first.localeCompare(second));
+}
+
+function getManifestFolderRoots(manifest: TransferManifest): string[] {
+  return manifest.folderRoots ?? getFolderRoots(manifest.files);
 }
 
 function createTransferId(): string {

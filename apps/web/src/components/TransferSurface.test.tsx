@@ -94,6 +94,25 @@ describe("TransferSurface", () => {
     expect(screen.getAllByText("Send").length).toBeGreaterThan(0);
   });
 
+  it("shows folder selections as folders instead of only file contents", () => {
+    render(React.createElement(TransferSurface, { roomState: previewRoomState }));
+
+    const input = screen.getByLabelText("Choose folder");
+    const file = new File(["nested"], "nested.txt", { type: "text/plain" });
+
+    Object.defineProperty(file, "webkitRelativePath", {
+      value: "Project/docs/nested.txt"
+    });
+
+    fireEvent.change(input, {
+      target: {
+        files: [file]
+      }
+    });
+
+    expect(screen.getByText("1 folder selected")).toBeInTheDocument();
+  });
+
   it("asks users to select files before choosing a device", () => {
     render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 

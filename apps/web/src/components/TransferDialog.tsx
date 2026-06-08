@@ -1,7 +1,12 @@
 import { Check, FileArchive, X } from "lucide-react";
 import React from "react";
 
-import { formatBytes, type TransferManifest } from "../lib/files";
+import {
+  formatBytes,
+  getTransferDisplayName,
+  getTransferItemLabel,
+  type TransferManifest
+} from "../lib/files";
 
 type TransferDialogProps = {
   manifest?: TransferManifest;
@@ -20,9 +25,8 @@ export function TransferDialog({
   onAccept,
   onReject
 }: TransferDialogProps) {
-  const fileCount = manifest?.files.length ?? 0;
-  const detail =
-    statusText ?? `${fileCount} ${fileCount === 1 ? "file" : "files"} from ${senderName}`;
+  const detail = statusText ?? `${manifest ? getTransferItemLabel(manifest) : "Files"} from ${senderName}`;
+  const displayName = manifest ? getTransferDisplayName(manifest, title) : title;
 
   return (
     <section
@@ -34,7 +38,7 @@ export function TransferDialog({
           <FileArchive aria-hidden="true" className="size-5" />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-[#202124]">{manifest?.files[0]?.name ?? title}</p>
+          <p className="truncate text-sm font-semibold text-[#202124]">{displayName}</p>
           <p className="truncate text-xs text-[#6b7280]">
             {manifest ? `${detail} (${formatBytes(manifest.totalBytes)})` : detail}
           </p>
