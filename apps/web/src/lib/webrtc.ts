@@ -68,11 +68,38 @@ export function attachDataChannelHandlers(
 export async function createOffer(connection: RTCPeerConnection): Promise<RTCSessionDescriptionInit> {
   const offer = await connection.createOffer();
   await connection.setLocalDescription(offer);
-  return offer;
+  await waitForIceGathering(connection);
+  return connection.localDescription?.toJSON() ?? offer;
 }
 
 export async function createAnswer(connection: RTCPeerConnection): Promise<RTCSessionDescriptionInit> {
   const answer = await connection.createAnswer();
   await connection.setLocalDescription(answer);
-  return answer;
+  await waitForIceGathering(connection);
+  return connection.localDescription?.toJSON() ?? answer;
+}
+
+async function waitForIceGathering(connection: RTCPeerConnection): Promise<void> {
+  if (connection.iceGatheringState === "complete") {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const timeout = window.setTimeout(() => {
+      connection.removeEventListener("icegatheringstatechange", handleStateChange);
+      resolve();
+    }, 2_000);
+
+    function handleStateChange() {
+      if (connection.iceGatheringState !== "complete") {
+        return;
+      }
+
+      window.clearTimeout(timeout);
+      connection.removeEventListener("icegatheringstatechange", handleStateChange);
+      resolve();
+    }
+
+    connection.addEventListener("icegatheringstatechange", handleStateChange);
+  });
 }

@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { TransferDialog } from "./TransferDialog";
 import { TransferSurface, previewRoomState } from "./TransferSurface";
@@ -20,30 +20,38 @@ describe("TransferSurface", () => {
     expect(screen.getByText("Upload Folder")).toBeInTheDocument();
   });
 
-  it("shows mock peers and transfer states for Phase 2", () => {
+  it("shows discovered peers without demo transfer state cards", () => {
     render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
-    expect(screen.getByRole("button", { name: "Studio Laptop, Ready" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Amina Phone, Ready" })).toBeInTheDocument();
-    expect(screen.getByText("Connecting")).toBeInTheDocument();
-    expect(screen.getByText("Drag over")).toBeInTheDocument();
-    expect(screen.getByText("Receiver selected")).toBeInTheDocument();
-    expect(screen.getByText("Connection failed")).toBeInTheDocument();
-    expect(screen.getAllByText("Browser limited").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Studio Laptop, Ready" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Amina Phone, Ready" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Receiver selected")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connection failed")).not.toBeInTheDocument();
   });
 
-  it("renders progress and incoming transfer previews", () => {
+  it("renders incoming transfer approvals only when a manifest exists", () => {
+    const manifest = {
+      transferId: "transfer-dialog-test",
+      files: [
+        {
+          id: "file-dialog-test",
+          name: "brand-kit.zip",
+          size: 1024,
+          type: "application/zip",
+          lastModified: Date.now()
+        }
+      ],
+      totalBytes: 1024,
+      createdAt: Date.now()
+    };
+
     render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
-    expect(screen.getByRole("progressbar", { name: "Sending portfolio.zip" })).toHaveAttribute(
-      "aria-valuenow",
-      "52"
-    );
-    expect(screen.getByRole("progressbar", { name: "Received brand-kit" })).toHaveAttribute(
-      "aria-valuenow",
-      "100"
-    );
+    expect(screen.queryByText("Design assets")).not.toBeInTheDocument();
+    expect(screen.queryByRole("progressbar", { name: "Sending portfolio.zip" })).not.toBeInTheDocument();
+    render(React.createElement(TransferDialog, { manifest, onAccept: vi.fn(), onReject: vi.fn() }));
     expect(screen.getByLabelText("Incoming transfer preview")).toBeInTheDocument();
+    expect(screen.getByText("brand-kit.zip")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Accept" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
   });
@@ -131,7 +139,7 @@ describe("TransferSurface", () => {
       })
     );
 
-    expect(screen.getByText("<img src=x onerror=window.__oppassumXss=1>")).toBeInTheDocument();
+    expect(screen.getAllByText("<img src=x onerror=window.__oppassumXss=1>").length).toBeGreaterThan(0);
     expect(screen.getByText("<script>window.__oppassumXss=1</script>.txt")).toBeInTheDocument();
     expect(testWindow.__oppassumXss).toBeUndefined();
   });

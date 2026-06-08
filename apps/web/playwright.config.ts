@@ -1,6 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const chromiumExecutablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+const chromiumLaunchOptions = {
+  ...(chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : {}),
+  args: ["--disable-features=WebRtcHideLocalIpsWithMdns"]
+};
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -9,7 +13,7 @@ export default defineConfig({
   workers: 2,
   use: {
     baseURL: "http://127.0.0.1:3400",
-    launchOptions: chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : undefined,
+    launchOptions: chromiumLaunchOptions,
     trace: "on-first-retry"
   },
   webServer: [

@@ -14,13 +14,13 @@ type TransferDialogProps = {
 
 export function TransferDialog({
   manifest,
-  senderName = "Studio Laptop",
-  title = "Design assets",
+  senderName = "Nearby device",
+  title = "Incoming files",
   statusText,
   onAccept,
   onReject
 }: TransferDialogProps) {
-  const fileCount = manifest?.files.length ?? 3;
+  const fileCount = manifest?.files.length ?? 0;
   const detail =
     statusText ?? `${fileCount} ${fileCount === 1 ? "file" : "files"} from ${senderName}`;
 
@@ -40,24 +40,26 @@ export function TransferDialog({
           </p>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#2f9e44] px-3 text-sm font-semibold text-white outline-none transition hover:bg-[#26843a] focus-visible:ring-2 focus-visible:ring-[#2f9e44] focus-visible:ring-offset-2"
-          type="button"
-          onClick={onAccept}
-        >
-          <Check aria-hidden="true" className="size-4" />
-          Accept
-        </button>
-        <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#5b82f6] focus-visible:ring-offset-2"
-          type="button"
-          onClick={onReject}
-        >
-          <X aria-hidden="true" className="size-4" />
-          Reject
-        </button>
-      </div>
+      {manifest && onAccept && onReject ? (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#2f9e44] px-3 text-sm font-semibold text-white outline-none transition hover:bg-[#26843a] focus-visible:ring-2 focus-visible:ring-[#2f9e44] focus-visible:ring-offset-2"
+            type="button"
+            onClick={onAccept}
+          >
+            <Check aria-hidden="true" className="size-4" />
+            Accept
+          </button>
+          <button
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#5b82f6] focus-visible:ring-offset-2"
+            type="button"
+            onClick={onReject}
+          >
+            <X aria-hidden="true" className="size-4" />
+            Reject
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

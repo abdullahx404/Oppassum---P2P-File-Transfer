@@ -56,7 +56,6 @@ export function UploadTarget({
             isDragActive ? "border-[#2f9e44]" : "border-[#5b82f6]"
           }`}
         />
-        <span className="absolute left-[18%] top-[8%] h-[44%] w-[18px] rotate-[38deg] rounded-full bg-[#3658b6]" />
         <span className="relative z-10 flex flex-col items-center gap-2 px-8">
           <Upload aria-hidden="true" className="size-8 text-[#5b82f6]" />
           <span className="text-2xl font-semibold leading-tight text-[#3c4043]">Upload Files</span>

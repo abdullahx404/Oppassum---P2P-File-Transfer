@@ -101,6 +101,7 @@ const CONNECTION_TIMEOUT_MS = 15_000;
 export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapshot {
   const sessions = useRef(new Map<string, PeerConnectionSession>());
   const timeoutHandles = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const pendingIceCandidates = useRef(new Map<string, RTCIceCandidateInit[]>());
   const pendingOutgoingTransfers = useRef(new Map<string, PendingOutgoingTransfer>());
   const receivingTransfers = useRef(new Map<string, ActiveReceivingTransfer>());
   const lastOutgoingTransfer = useRef<PendingOutgoingTransfer | undefined>(undefined);
@@ -218,6 +219,41 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
       });
     },
     [roomState.roomId, roomState.self.peerId, roomState.socket]
+  );
+
+  const addRemoteIceCandidate = useCallback(
+    async (
+      peerId: string,
+      connection: RTCPeerConnection,
+      candidate: RTCIceCandidateInit
+    ): Promise<void> => {
+      if (!connection.remoteDescription) {
+        pendingIceCandidates.current.set(peerId, [
+          ...(pendingIceCandidates.current.get(peerId) ?? []),
+          candidate
+        ]);
+        return;
+      }
+
+      try {
+        await connection.addIceCandidate(candidate);
+      } catch {
+        setPeerStatus(peerId, "failed");
+      }
+    },
+    [setPeerStatus]
+  );
+
+  const flushRemoteIceCandidates = useCallback(
+    async (peerId: string, connection: RTCPeerConnection): Promise<void> => {
+      const candidates = pendingIceCandidates.current.get(peerId) ?? [];
+      pendingIceCandidates.current.delete(peerId);
+
+      for (const candidate of candidates) {
+        await addRemoteIceCandidate(peerId, connection, candidate);
+      }
+    },
+    [addRemoteIceCandidate]
   );
 
   const sendTransferChunks = useCallback(async (peerId: string, transferId: string) => {
@@ -561,6 +597,33 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
         return;
       }
 
+      const existingSession = sessions.current.get(peer.peerId);
+
+      if (existingSession?.channel?.readyState === "open") {
+        clearConnectionTimeout(peer.peerId);
+        setPeerStatus(peer.peerId, "data-channel-open");
+        setActivePeerId(peer.peerId);
+        return;
+      }
+
+      if (existingSession?.channel?.readyState === "connecting") {
+        setPeerStatus(peer.peerId, "connecting");
+        setActivePeerId(peer.peerId);
+        startConnectionTimeout(peer.peerId);
+        return;
+      }
+
+      if (
+        existingSession &&
+        (existingSession.connection.connectionState === "failed" ||
+          existingSession.connection.connectionState === "closed" ||
+          existingSession.connection.connectionState === "disconnected")
+      ) {
+        existingSession.channel?.close();
+        existingSession.connection.close();
+        sessions.current.delete(peer.peerId);
+      }
+
       setPeerStatus(peer.peerId, "connecting");
       setActivePeerId(peer.peerId);
       startConnectionTimeout(peer.peerId);
@@ -591,8 +654,6 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
 
   const sendTransferManifest = useCallback(
     async (peer: Peer, manifest: TransferManifest, files: File[]) => {
-      await connectToPeer(peer);
-      const session = createSession(peer.peerId);
       const outgoingTransfer = {
         peer,
         peerId: peer.peerId,
@@ -609,6 +670,8 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
         status: "pending"
       });
 
+      await connectToPeer(peer);
+      const session = createSession(peer.peerId);
       sendWhenChannelOpens(session, {
         kind: "transfer-manifest",
         manifest
@@ -673,6 +736,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
         setPeerStatus(message.fromPeerId, "connecting");
         startConnectionTimeout(message.fromPeerId);
         await session.connection.setRemoteDescription(message.payload as RTCSessionDescriptionInit);
+        await flushRemoteIceCandidates(message.fromPeerId, session.connection);
         const answer = await createAnswer(session.connection);
         sendSignal(message.fromPeerId, {
           type: "answer",
@@ -682,14 +746,15 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
 
       if (message.type === "answer") {
         await session.connection.setRemoteDescription(message.payload as RTCSessionDescriptionInit);
+        await flushRemoteIceCandidates(message.fromPeerId, session.connection);
       }
 
       if (message.type === "ice-candidate") {
-        try {
-          await session.connection.addIceCandidate(message.payload as RTCIceCandidateInit);
-        } catch {
-          setPeerStatus(message.fromPeerId, "failed");
-        }
+        await addRemoteIceCandidate(
+          message.fromPeerId,
+          session.connection,
+          message.payload as RTCIceCandidateInit
+        );
       }
     };
 
@@ -700,6 +765,8 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     };
   }, [
     createSession,
+    addRemoteIceCandidate,
+    flushRemoteIceCandidates,
     roomState.roomId,
     roomState.self.peerId,
     roomState.socket,
@@ -721,6 +788,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
         session.channel?.close();
         session.connection.close();
         sessions.current.delete(peerId);
+        pendingIceCandidates.current.delete(peerId);
         clearConnectionTimeout(peerId);
         setPeerStatus(peerId, "disconnected");
       }
@@ -739,6 +807,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
         session.connection.close();
       });
       currentSessions.clear();
+      pendingIceCandidates.current.clear();
       receivedFileUrls.current.forEach((url) => URL.revokeObjectURL(url));
       receivedFileUrls.current = [];
     };

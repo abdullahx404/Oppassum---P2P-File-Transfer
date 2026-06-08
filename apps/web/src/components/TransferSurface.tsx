@@ -1,13 +1,12 @@
 "use client";
 
 import type { DeviceType } from "@oppassum/shared";
-import { AlertTriangle, Download, Info, Radio, RotateCcw } from "lucide-react";
+import { AlertTriangle, Info, Radio, RotateCcw } from "lucide-react";
 import React from "react";
 
 import { BrandMark } from "./BrandMark";
 import { DevicePeerCard } from "./DevicePeerCard";
 import { ProgressPanel } from "./ProgressPanel";
-import { StatePreview } from "./StatePreview";
 import { TransferDialog } from "./TransferDialog";
 import { UploadTarget } from "./UploadTarget";
 import { useFileTransfer } from "../hooks/useFileTransfer";
@@ -41,7 +40,6 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const largeTransferWarning = fileTransfer.manifest
     ? getLargeTransferWarning(fileTransfer.manifest.totalBytes)
     : undefined;
-  const peerCount = currentRoom.peers.length;
   const roomStatusText = getRoomStatusText(currentRoom);
   const connectionStatusText = getConnectionStatusText(
     peerConnection.activePeerId,
@@ -84,10 +82,6 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         ))}
 
         <div className="flex w-full flex-1 flex-col items-center justify-center">
-          <div className="rounded-full border border-dashed border-[#dfe4ef] bg-white/50 px-4 py-2 text-sm font-medium text-[#6b7280] shadow-[0_14px_40px_rgba(32,33,36,0.04)] md:hidden">
-            {peerCount} nearby {peerCount === 1 ? "device" : "devices"}
-          </div>
-
           <UploadTarget
             selectedCount={fileTransfer.files.length}
             isDragActive={fileTransfer.isDragActive}
@@ -162,11 +156,38 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 </button>
               </div>
             ) : null}
+            {currentRoom.peers.length > 0 ? (
+              <div className="grid w-full max-w-sm gap-2 md:hidden" aria-label="Nearby devices">
+                {currentRoom.peers.map((peer) => (
+                  <button
+                    key={peer.peerId}
+                    className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-white/94 px-4 text-left text-sm font-semibold text-[#202124] shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4] outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                    type="button"
+                    aria-label={`${peer.displayName}, ${getPeerStatusLabel(peerConnection.statuses[peer.peerId])}`}
+                    onClick={() => {
+                      if (fileTransfer.manifest) {
+                        void peerConnection.sendTransferManifest(peer, fileTransfer.manifest, fileTransfer.files);
+                        return;
+                      }
+
+                      void peerConnection.connectToPeer(peer);
+                    }}
+                  >
+                    <span className="truncate">{peer.displayName}</span>
+                    <span className="shrink-0 text-xs font-medium text-[#6b7280]">
+                      {getPeerStatusLabel(peerConnection.statuses[peer.peerId])}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <div className="mt-8 grid w-full max-w-[1120px] gap-4 lg:grid-cols-[1fr_360px]">
-          <div className="grid gap-3 sm:grid-cols-2">
+        {peerConnection.transferProgress ||
+        peerConnection.incomingOffer ||
+        peerConnection.outgoingStatus ? (
+          <div className="mt-8 grid w-full max-w-[1120px] gap-4 lg:grid-cols-[1fr_360px]">
             {peerConnection.transferProgress ? (
               <ProgressPanel
                 title={getProgressTitle(peerConnection.transferProgress)}
@@ -174,34 +195,25 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 value={getTransferPercent(peerConnection.transferProgress)}
                 tone={peerConnection.transferProgress.direction === "receiving" ? "green" : "blue"}
               />
-            ) : (
-              <>
-                <ProgressPanel title="Sending portfolio.zip" detail="42 MB of 80 MB" value={52} />
-                <ProgressPanel
-                  title="Received brand-kit"
-                  detail="Completed from Studio Laptop"
-                  value={100}
-                  tone="green"
-                />
-              </>
-            )}
+            ) : null}
+            {peerConnection.incomingOffer || peerConnection.outgoingStatus ? (
+              <TransferDialog
+                manifest={peerConnection.incomingOffer?.manifest}
+                senderName={
+                  getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device"
+                }
+                title={peerConnection.incomingOffer ? "Incoming files" : "Transfer request"}
+                statusText={getOutgoingStatusText(peerConnection.outgoingStatus)}
+                onAccept={peerConnection.acceptIncomingTransfer}
+                onReject={peerConnection.rejectIncomingTransfer}
+              />
+            ) : null}
           </div>
-          <TransferDialog
-            manifest={peerConnection.incomingOffer?.manifest}
-            senderName={getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device"}
-            title={peerConnection.incomingOffer ? "Incoming files" : "Design assets"}
-            statusText={getOutgoingStatusText(peerConnection.outgoingStatus)}
-            onAccept={peerConnection.acceptIncomingTransfer}
-            onReject={peerConnection.rejectIncomingTransfer}
-          />
-        </div>
-
-        <div className="mt-5 w-full">
-          <StatePreview />
-        </div>
+        ) : null}
 
         {peerConnection.receivedFiles.length > 0 ? (
           <section
+            id="received-files"
             className="mt-5 w-full max-w-[1120px] rounded-lg bg-white/94 p-4 shadow-[0_18px_48px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
             aria-label="Received files"
           >
@@ -226,14 +238,6 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           Drag-over state active. File selected. Sending progress. Receiving progress. Peer disconnected
           mid-transfer.
         </div>
-
-        <a
-          className="fixed bottom-5 right-5 z-30 hidden size-11 items-center justify-center rounded-full bg-[#5b82f6] text-white shadow-[0_16px_45px_rgba(91,130,246,0.35)] outline-none transition hover:bg-[#3658b6] focus-visible:ring-2 focus-visible:ring-[#5b82f6] focus-visible:ring-offset-4 sm:flex"
-          href="#"
-          aria-label="Download completed files"
-        >
-          <Download aria-hidden="true" className="size-5" />
-        </a>
       </section>
     </main>
   );
