@@ -23,6 +23,7 @@ export type ReceivedTransferFile = {
   type: string;
   relativePath?: string;
   url: string;
+  receivedAt: number;
 };
 
 export async function* readFileChunks(
@@ -78,7 +79,8 @@ export function createReceivedFileUrl(
     size: file.size,
     type: file.type,
     relativePath: file.relativePath,
-    url: URL.createObjectURL(blob)
+    url: URL.createObjectURL(blob),
+    receivedAt: Date.now()
   };
 }
 

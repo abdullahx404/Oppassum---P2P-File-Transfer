@@ -8,6 +8,7 @@ type DevicePeerCardProps = {
   status: string;
   kind: DeviceKind;
   positionClassName: string;
+  canSend?: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
 };
@@ -25,6 +26,7 @@ export function DevicePeerCard({
   status,
   kind,
   positionClassName,
+  canSend = false,
   isSelected = false,
   onSelect
 }: DevicePeerCardProps) {
@@ -32,7 +34,7 @@ export function DevicePeerCard({
 
   return (
     <button
-      className={`absolute hidden w-[148px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 rounded-lg bg-white/88 px-4 py-3 text-center shadow-[0_18px_45px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] backdrop-blur outline-none transition hover:-translate-y-[calc(50%+2px)] hover:shadow-[0_22px_55px_rgba(255,91,56,0.13)] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] md:flex ${positionClassName}`}
+      className={`absolute hidden w-[160px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 rounded-lg bg-white/92 px-4 py-3 text-center shadow-[0_18px_45px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] backdrop-blur outline-none transition hover:-translate-y-[calc(50%+2px)] hover:shadow-[0_22px_55px_rgba(255,91,56,0.13)] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] md:flex ${positionClassName}`}
       type="button"
       aria-label={`${name}, ${status}`}
       onClick={onSelect}
@@ -48,6 +50,11 @@ export function DevicePeerCard({
       </span>
       <span className="w-full truncate text-sm font-semibold text-[#202124]">{name}</span>
       <span className="w-full truncate text-xs text-[#6b7280]">{status}</span>
+      {canSend ? (
+        <span className="mt-1 inline-flex h-8 w-full items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-xs font-semibold text-white shadow-[0_10px_24px_rgba(255,91,56,0.2)]">
+          Send
+        </span>
+      ) : null}
     </button>
   );
 }

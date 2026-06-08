@@ -488,7 +488,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
       receivingTransfer.files.push(receivedFile);
       receivingTransfer.completedFiles += 1;
       receivingTransfer.currentFile = undefined;
-      setReceivedFiles((current) => [...current, receivedFile]);
+      setReceivedFiles((current) => [receivedFile, ...current]);
     }
 
     if (message.kind === "transfer-complete") {

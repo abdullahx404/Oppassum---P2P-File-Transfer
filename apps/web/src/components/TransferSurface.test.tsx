@@ -90,7 +90,22 @@ describe("TransferSurface", () => {
 
     expect(screen.getByLabelText("Selected file manifest")).toBeInTheDocument();
     expect(screen.getByText("1 file selected")).toBeInTheDocument();
-    expect(screen.getByText(/5 B ready to share. Select a device to share with./)).toBeInTheDocument();
+    expect(screen.getByText(/5 B ready to share. Click Send on a device to share with./)).toBeInTheDocument();
+    expect(screen.getAllByText("Send").length).toBeGreaterThan(0);
+  });
+
+  it("asks users to select files before choosing a device", () => {
+    render(React.createElement(TransferSurface, { roomState: previewRoomState }));
+
+    const studioLaptopButtons = screen.getAllByRole("button", { name: "Studio Laptop, Ready" });
+
+    expect(studioLaptopButtons[0]).toBeDefined();
+    fireEvent.click(studioLaptopButtons[0] as HTMLElement);
+
+    expect(screen.getByText("Select files first")).toBeInTheDocument();
+    expect(
+      screen.getByText("Select files or a folder first, then choose a device to send.")
+    ).toBeInTheDocument();
   });
 
   it("renders user-controlled names as text without executing markup", () => {

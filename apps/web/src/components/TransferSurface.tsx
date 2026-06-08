@@ -1,7 +1,18 @@
 "use client";
 
-import type { DeviceType } from "@oppassum/shared";
-import { AlertTriangle, Download, Info, RotateCcw, X } from "lucide-react";
+import type { DeviceType, Peer } from "@oppassum/shared";
+import {
+  AlertTriangle,
+  Download,
+  HelpCircle,
+  Info,
+  Laptop,
+  Monitor,
+  RotateCcw,
+  Smartphone,
+  Tablet,
+  X
+} from "lucide-react";
 import React from "react";
 
 import { BrandMark } from "./BrandMark";
@@ -31,6 +42,14 @@ const peerPositions = [
   "left-[69%] top-[55%]"
 ] as const;
 
+const mobileDeviceIcons = {
+  laptop: Laptop,
+  desktop: Monitor,
+  phone: Smartphone,
+  tablet: Tablet,
+  unknown: HelpCircle
+} satisfies Record<ReturnType<typeof toDeviceKind>, typeof Laptop>;
+
 export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const liveRoomState = useSocketRoom({ enabled: !roomState });
   const currentRoom = roomState ?? liveRoomState;
@@ -38,6 +57,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const fileTransfer = useFileTransfer();
   const [isInfoOpen, setInfoOpen] = React.useState(false);
   const [deviceNameDraft, setDeviceNameDraft] = React.useState(currentRoom.self.displayName);
+  const [selectionPrompt, setSelectionPrompt] = React.useState<string | undefined>();
   const browserSupport = getBrowserSupportState();
   const largeTransferWarning = fileTransfer.manifest
     ? getLargeTransferWarning(fileTransfer.manifest.totalBytes)
@@ -56,6 +76,19 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const saveDeviceName = React.useCallback(() => {
     currentRoom.updateDeviceName?.(deviceNameDraft);
   }, [currentRoom, deviceNameDraft]);
+
+  const handlePeerSelect = React.useCallback(
+    (peer: Peer) => {
+      if (!fileTransfer.manifest) {
+        setSelectionPrompt("Select files or a folder first, then choose a device to send.");
+        return;
+      }
+
+      setSelectionPrompt(undefined);
+      void peerConnection.sendTransferManifest(peer, fileTransfer.manifest, fileTransfer.files);
+    },
+    [fileTransfer.files, fileTransfer.manifest, peerConnection]
+  );
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124]">
@@ -99,9 +132,10 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 <ol className="mt-3 space-y-2 text-[#5f6673]">
                   <li>1. Open this page on both devices.</li>
                   <li>2. Select files or a folder.</li>
-                  <li>3. Pick the receiving device.</li>
-                  <li>4. Accept the request and download.</li>
-                  <li>5. Keep both devices awake. Do not close this website, lock your phone, or turn off the screen while transferring.</li>
+                  <li>3. Click Send on the receiving device.</li>
+                  <li>4. Accept the request on the other device.</li>
+                  <li>5. Download each received file.</li>
+                  <li>6. Keep both devices awake. Do not close this website, lock your phone, or turn off the screen while transferring.</li>
                 </ol>
                 <label className="mt-4 block text-xs font-semibold text-[#3c4043]">
                   This device name
@@ -132,15 +166,9 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             status={getPeerStatusLabel(peerConnection.statuses[peer.peerId])}
             kind={toDeviceKind(peer.deviceType)}
             positionClassName={peerPositions[index] ?? peerPositions[0]}
+            canSend={Boolean(fileTransfer.manifest)}
             isSelected={peerConnection.activePeerId === peer.peerId}
-            onSelect={() => {
-              if (fileTransfer.manifest) {
-                void peerConnection.sendTransferManifest(peer, fileTransfer.manifest, fileTransfer.files);
-                return;
-              }
-
-              void peerConnection.connectToPeer(peer);
-            }}
+            onSelect={() => handlePeerSelect(peer)}
           />
         ))}
 
@@ -148,7 +176,10 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           <UploadTarget
             selectedCount={fileTransfer.files.length}
             isDragActive={fileTransfer.isDragActive}
-            onFilesSelected={fileTransfer.selectFiles}
+            onFilesSelected={(files) => {
+              setSelectionPrompt(undefined);
+              fileTransfer.selectFiles(files);
+            }}
             onDragActiveChange={fileTransfer.setDragActive}
           />
 
@@ -176,6 +207,9 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             ) : null}
             {largeTransferWarning ? (
               <StatusNotice title="Large transfer" detail={largeTransferWarning} tone="warning" />
+            ) : null}
+            {selectionPrompt ? (
+              <StatusNotice title="Select files first" detail={selectionPrompt} tone="warning" />
             ) : null}
             {peerConnection.transferError ? (
               <StatusNotice
@@ -208,8 +242,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   {fileTransfer.manifest.files.length === 1 ? "file" : "files"} selected
                 </p>
                 <p className="mt-1 text-[#6b7280]">
-                  {formatBytes(fileTransfer.manifest.totalBytes)} ready to share. Select a device to
-                  share with.
+                  {formatBytes(fileTransfer.manifest.totalBytes)} ready to share. Click Send on a
+                  device to share with.
                 </p>
                 <button
                   className="mt-2 text-sm font-semibold text-[#ff5b38] outline-none focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
@@ -223,25 +257,13 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             {currentRoom.peers.length > 0 ? (
               <div className="grid w-full max-w-sm gap-2 md:hidden" aria-label="Nearby devices">
                 {currentRoom.peers.map((peer) => (
-                  <button
+                  <MobilePeerButton
                     key={peer.peerId}
-                    className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-white/94 px-4 text-left text-sm font-semibold text-[#202124] shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#ffe0cf] outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
-                    type="button"
-                    aria-label={`${peer.displayName}, ${getPeerStatusLabel(peerConnection.statuses[peer.peerId])}`}
-                    onClick={() => {
-                      if (fileTransfer.manifest) {
-                        void peerConnection.sendTransferManifest(peer, fileTransfer.manifest, fileTransfer.files);
-                        return;
-                      }
-
-                      void peerConnection.connectToPeer(peer);
-                    }}
-                  >
-                    <span className="truncate">{peer.displayName}</span>
-                    <span className="shrink-0 text-xs font-medium text-[#6b7280]">
-                      {getPeerStatusLabel(peerConnection.statuses[peer.peerId])}
-                    </span>
-                  </button>
+                    peer={peer}
+                    status={getPeerStatusLabel(peerConnection.statuses[peer.peerId])}
+                    canSend={Boolean(fileTransfer.manifest)}
+                    onSelect={() => handlePeerSelect(peer)}
+                  />
                 ))}
               </div>
             ) : null}
@@ -283,19 +305,21 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 Clear downloads
               </button>
             </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="mt-3 grid gap-2">
               {peerConnection.receivedFiles.map((file) => (
                 <a
                   key={`${file.id}-${file.url}`}
-                  className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[#fffaf7] px-3 py-2 text-sm font-medium text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-[#fff4ed] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+                  className="grid min-w-0 gap-3 rounded-lg bg-[#fffaf7] px-3 py-3 text-sm font-medium text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-[#fff4ed] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] sm:grid-cols-[minmax(0,1fr)_minmax(12rem,18rem)] sm:items-stretch"
                   href={file.url}
                   download={file.relativePath ?? file.name}
                 >
                   <span className="min-w-0">
                     <span className="block truncate">{file.relativePath ?? file.name}</span>
-                    <span className="block text-xs text-[#6b7280]">{formatBytes(file.size)}</span>
+                    <span className="block text-xs text-[#6b7280]">
+                      {formatBytes(file.size)} · Received {formatReceivedTime(file.receivedAt)}
+                    </span>
                   </span>
-                  <span className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 py-2 text-xs font-semibold text-white">
+                  <span className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-5 py-2 text-xs font-semibold text-white">
                     <Download aria-hidden="true" className="size-4" />
                     Download
                   </span>
@@ -323,6 +347,48 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         </div>
       ) : null}
     </main>
+  );
+}
+
+function MobilePeerButton({
+  peer,
+  status,
+  canSend,
+  onSelect
+}: {
+  peer: Peer;
+  status: string;
+  canSend: boolean;
+  onSelect: () => void;
+}) {
+  const DeviceIcon = mobileDeviceIcons[toDeviceKind(peer.deviceType)];
+
+  return (
+    <button
+      className="flex min-h-20 items-center justify-between gap-3 rounded-lg bg-white/96 px-4 py-3 text-left text-sm font-semibold text-[#202124] shadow-[0_18px_44px_rgba(255,91,56,0.12)] ring-1 ring-[#ffd6c2] outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+      type="button"
+      aria-label={`${peer.displayName}, ${status}${canSend ? ", Send" : ""}`}
+      onClick={onSelect}
+    >
+      <span className="flex min-w-0 items-center gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-white shadow-[0_10px_24px_rgba(255,91,56,0.2)]">
+          <DeviceIcon aria-hidden="true" className="size-5" />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-base">{peer.displayName}</span>
+          <span className="block truncate text-xs font-medium text-[#6b7280]">{status}</span>
+        </span>
+      </span>
+      <span
+        className={`inline-flex h-9 shrink-0 items-center justify-center rounded-lg px-3 text-xs font-semibold ${
+          canSend
+            ? "bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-white"
+            : "bg-[#fff4ed] text-[#ff5b38]"
+        }`}
+      >
+        {canSend ? "Send" : "Select files"}
+      </span>
+    </button>
   );
 }
 
@@ -439,6 +505,13 @@ function getRoomStatusText(roomState: SocketRoomState): string {
 
 function toDeviceKind(deviceType: DeviceType): "laptop" | "desktop" | "phone" | "tablet" | "unknown" {
   return deviceType;
+}
+
+function formatReceivedTime(receivedAt: number): string {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(receivedAt);
 }
 
 export const previewRoomState = createFallbackRoomState({
