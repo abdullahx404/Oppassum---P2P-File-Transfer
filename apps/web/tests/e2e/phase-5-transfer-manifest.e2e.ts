@@ -14,8 +14,8 @@ test("sender and receiver agree on a transfer manifest before file bytes are sen
   await firstPage.goto(`/?room=${roomId}`);
   await secondPage.goto(`/?room=${roomId}`);
 
-  await expect(firstPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
-  await expect(secondPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
+  await expect(firstPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
+  await expect(secondPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
 
   await firstPage.getByLabel("Choose files").setInputFiles({
     name: "manifest-only.txt",

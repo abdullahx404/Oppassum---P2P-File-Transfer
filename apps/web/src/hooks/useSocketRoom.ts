@@ -179,9 +179,9 @@ function createSessionPeer(): Peer {
     return createPeer("peer-server", "This Device", "unknown");
   }
 
-  const existingPeerId = window.sessionStorage.getItem("oppassum.peerId");
+  const existingPeerId = window.localStorage.getItem("oppassum.peerId");
   const peerId = existingPeerId ?? `peer-${crypto.randomUUID()}`;
-  window.sessionStorage.setItem("oppassum.peerId", peerId);
+  window.localStorage.setItem("oppassum.peerId", peerId);
 
   return createPeer(peerId, getDeviceName(peerId), getDeviceType());
 }

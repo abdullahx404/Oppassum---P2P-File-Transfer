@@ -73,7 +73,7 @@ export function UploadTarget({
         </span>
       </label>
 
-      <label className="mt-7 inline-flex h-12 cursor-pointer items-center justify-center gap-3 rounded-lg bg-white px-8 text-base font-medium text-[#3c4043] shadow-[0_18px_55px_rgba(32,33,36,0.1)] ring-1 ring-[#ffe0cf] outline-none transition hover:-translate-y-0.5 hover:shadow-[0_22px_65px_rgba(255,91,56,0.14)] focus-within:ring-2 focus-within:ring-[#ff7a1a]">
+      <label className="mt-7 inline-flex h-14 cursor-pointer items-center justify-center gap-3 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-10 text-lg font-semibold text-white shadow-[0_20px_60px_rgba(255,91,56,0.22)] outline-none transition hover:-translate-y-0.5 hover:brightness-95 hover:shadow-[0_24px_70px_rgba(255,91,56,0.28)] focus-within:ring-2 focus-within:ring-[#ff7a1a] focus-within:ring-offset-2">
         <input
           className="file-input-control"
           type="file"
@@ -86,7 +86,7 @@ export function UploadTarget({
             }
           }}
         />
-        <FolderUp aria-hidden="true" className="size-5 text-[#ff5b38]" />
+        <FolderUp aria-hidden="true" className="size-6 text-white" />
         Upload Folder
       </label>
     </section>

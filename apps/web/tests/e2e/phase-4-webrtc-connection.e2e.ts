@@ -12,15 +12,15 @@ test("opens a WebRTC data channel between two discovered peers", async ({ browse
   await firstPage.goto(`/?room=${roomId}`);
   await secondPage.goto(`/?room=${roomId}`);
 
-  await expect(firstPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
-  await expect(secondPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
+  await expect(firstPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
+  await expect(secondPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
 
   await firstPage.getByRole("button", { name: /, Ready/ }).first().click();
 
-  await expect(firstPage.getByTestId("webrtc-connection-status")).toHaveText("Data channel open", {
+  await expect(firstPage.getByTestId("webrtc-connection-status")).toHaveText("Data Channel Open", {
     timeout: 20_000
   });
-  await expect(secondPage.getByTestId("webrtc-connection-status")).toHaveText("Data channel open", {
+  await expect(secondPage.getByTestId("webrtc-connection-status")).toHaveText("Data Channel Open", {
     timeout: 20_000
   });
 

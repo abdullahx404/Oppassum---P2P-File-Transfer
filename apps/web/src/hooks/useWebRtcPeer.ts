@@ -37,6 +37,7 @@ export type PeerConnectionSnapshot = {
   transferError?: TransferError;
   receivedFiles: ReceivedTransferFile[];
   clearReceivedFiles: () => void;
+  clearTransferError: () => void;
   connectToPeer: (peer: Peer) => Promise<void>;
   sendTransferManifest: (peer: Peer, manifest: TransferManifest, files: File[]) => Promise<void>;
   retryLastTransfer: () => Promise<void>;
@@ -443,7 +444,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
 
     if (message.kind === "transfer-rejected") {
       setTransferError({
-        title: "Transfer rejected",
+        title: "Transfer Rejected",
         detail: "The receiver declined this transfer. You can try again with the same selection.",
         canRetry: true
       });
@@ -724,6 +725,10 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     setReceivedFiles([]);
   }, []);
 
+  const clearTransferError = useCallback(() => {
+    setTransferError(undefined);
+  }, []);
+
   useEffect(() => {
     const socket = roomState.socket;
 
@@ -829,6 +834,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     transferError,
     receivedFiles,
     clearReceivedFiles,
+    clearTransferError,
     connectToPeer,
     sendTransferManifest,
     retryLastTransfer,

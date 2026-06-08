@@ -14,8 +14,8 @@ test("shows rejection clearly and lets the sender retry the same selection", asy
   await firstPage.goto(`/?room=${roomId}`);
   await secondPage.goto(`/?room=${roomId}`);
 
-  await expect(firstPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
-  await expect(secondPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
+  await expect(firstPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
+  await expect(secondPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
 
   await firstPage.getByLabel("Choose files").setInputFiles({
     name: "retry-me.txt",
@@ -27,7 +27,7 @@ test("shows rejection clearly and lets the sender retry the same selection", asy
   await expect(secondPage.getByText("retry-me.txt")).toBeVisible({ timeout: 20_000 });
   await secondPage.getByRole("button", { name: "Reject" }).click();
 
-  await expect(firstPage.getByText("Transfer rejected")).toBeVisible({ timeout: 20_000 });
+  await expect(firstPage.getByText("Transfer Rejected")).toBeVisible({ timeout: 20_000 });
   await firstPage.getByRole("button", { name: "Retry" }).click();
 
   await expect(secondPage.getByText("retry-me.txt")).toBeVisible({ timeout: 20_000 });
@@ -52,8 +52,8 @@ test("reports a peer disconnect during a pending transfer without a stuck state"
   await firstPage.goto(`/?room=${roomId}`);
   await secondPage.goto(`/?room=${roomId}`);
 
-  await expect(firstPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
-  await expect(secondPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
+  await expect(firstPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
+  await expect(secondPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
 
   await firstPage.getByLabel("Choose files").setInputFiles({
     name: "disconnect.txt",

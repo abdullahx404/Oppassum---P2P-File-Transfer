@@ -26,7 +26,7 @@ describe("TransferSurface", () => {
     expect(screen.getAllByRole("button", { name: "Studio Laptop, Ready" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("button", { name: "Amina Phone, Ready" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("Receiver selected")).not.toBeInTheDocument();
-    expect(screen.queryByText("Connection failed")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connection Failed")).not.toBeInTheDocument();
   });
 
   it("renders incoming transfer approvals only when a manifest exists", () => {
@@ -73,7 +73,7 @@ describe("TransferSurface", () => {
     expect(screen.getByText("No Devices Connected Yet")).toBeInTheDocument();
 
     rerender(React.createElement(TransferSurface, { roomState: previewRoomState }));
-    expect(screen.getByText("4 devices connected")).toBeInTheDocument();
+    expect(screen.getByText("4 Devices Connected")).toBeInTheDocument();
   });
 
   it("shows selected file manifest metadata", () => {
@@ -90,7 +90,7 @@ describe("TransferSurface", () => {
 
     expect(screen.getByLabelText("Selected file manifest")).toBeInTheDocument();
     expect(screen.getByText("1 File Selected")).toBeInTheDocument();
-    expect(screen.getByText(/5 B ready to share. Click Send on a device to share with./)).toBeInTheDocument();
+    expect(screen.getByText(/hello.txt - 5 B ready to share. Click Send on a device to share with./)).toBeInTheDocument();
     expect(screen.getAllByText("Send").length).toBeGreaterThan(0);
   });
 
@@ -129,7 +129,7 @@ describe("TransferSurface", () => {
     expect(studioLaptopButtons[0]).toBeDefined();
     fireEvent.click(studioLaptopButtons[0] as HTMLElement);
 
-    expect(screen.getByText("Select files first")).toBeInTheDocument();
+    expect(screen.getByText("Select Files First")).toBeInTheDocument();
     expect(
       screen.getByText("Select files or a folder first, then choose a device to send.")
     ).toBeInTheDocument();

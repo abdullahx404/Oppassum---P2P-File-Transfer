@@ -79,6 +79,33 @@ label {
   }
 }
 
+.attention-shake {
+  animation: attention-shake 380ms ease-in-out;
+}
+
+@keyframes attention-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  18% {
+    transform: translateX(-8px);
+  }
+
+  36% {
+    transform: translateX(8px);
+  }
+
+  54% {
+    transform: translateX(-6px);
+  }
+
+  72% {
+    transform: translateX(6px);
+  }
+}
+
 @media (min-width: 640px) {
   .radar-rings {
     top: 7rem;

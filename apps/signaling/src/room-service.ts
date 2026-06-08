@@ -21,6 +21,11 @@ export class RoomService {
     const room = this.ensureRoom(roomId);
     const existingSession = room.peers.get(peer.peerId);
 
+    if (existingSession && existingSession.socketId !== socketId) {
+      this.socketRooms.delete(existingSession.socketId);
+      this.socketPeers.delete(existingSession.socketId);
+    }
+
     room.peers.set(peer.peerId, { peer, socketId });
     this.socketRooms.set(socketId, roomId);
     this.socketPeers.set(socketId, peer.peerId);
@@ -41,7 +46,11 @@ export class RoomService {
     }
 
     const room = this.rooms.get(roomId);
-    room?.peers.delete(peerId);
+    const activeSession = room?.peers.get(peerId);
+
+    if (activeSession?.socketId === socketId) {
+      room?.peers.delete(peerId);
+    }
 
     if (room && room.peers.size === 0) {
       this.rooms.delete(roomId);

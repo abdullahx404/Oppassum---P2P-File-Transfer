@@ -15,7 +15,11 @@ export function BrandMark() {
           className="size-7 object-contain"
         />
       </span>
-      <span className="text-2xl font-semibold tracking-normal sm:text-3xl">Oppassum</span>
+      <img
+        src="/oppassum-name.png"
+        alt="Oppassum"
+        className="h-8 w-auto object-contain sm:h-10"
+      />
     </a>
   );
 }

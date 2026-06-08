@@ -35,4 +35,18 @@ describe("RoomService", () => {
     expect(rooms.getPeerCount("second")).toBe(1);
     expect(rooms.getSocketRoom("socket-a")).toBe("second");
   });
+
+  it("keeps the latest socket when a browser reuses the same peer id", () => {
+    const rooms = new RoomService();
+
+    rooms.joinRoom("study", "socket-old", createPeer({ peerId: "peer-a000" }));
+    rooms.joinRoom("study", "socket-new", createPeer({ peerId: "peer-a000" }));
+
+    expect(rooms.getPeerCount("study")).toBe(1);
+    expect(rooms.getPeerSocketId("study", "peer-a000")).toBe("socket-new");
+    expect(rooms.leaveBySocket("socket-old")).toBeUndefined();
+    expect(rooms.getPeerCount("study")).toBe(1);
+    expect(rooms.leaveBySocket("socket-new")).toEqual({ roomId: "study", peerId: "peer-a000" });
+    expect(rooms.getRoomCount()).toBe(0);
+  });
 });

@@ -24,7 +24,7 @@ import { useFileTransfer } from "../hooks/useFileTransfer";
 import { useWebRtcPeer, type PeerConnectionStatus } from "../hooks/useWebRtcPeer";
 import { createFallbackRoomState, useSocketRoom, type SocketRoomState } from "../hooks/useSocketRoom";
 import { getTransferPercent, type ReceivedTransferFile } from "../lib/chunked-transfer";
-import { formatBytes, getTransferSelectionLabel } from "../lib/files";
+import { formatBytes, getTransferDisplayName, getTransferSelectionLabel } from "../lib/files";
 import {
   getBrowserSupportState,
   getLargeTransferWarning,
@@ -58,6 +58,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const [isInfoOpen, setInfoOpen] = React.useState(false);
   const [deviceNameDraft, setDeviceNameDraft] = React.useState(currentRoom.self.displayName);
   const [selectionPrompt, setSelectionPrompt] = React.useState<string | undefined>();
+  const [selectionPromptShakeKey, setSelectionPromptShakeKey] = React.useState(0);
   const browserSupport = getBrowserSupportState();
   const largeTransferWarning = fileTransfer.manifest
     ? getLargeTransferWarning(fileTransfer.manifest.totalBytes)
@@ -81,6 +82,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     (peer: Peer) => {
       if (!fileTransfer.manifest) {
         setSelectionPrompt("Select files or a folder first, then choose a device to send.");
+        setSelectionPromptShakeKey((current) => current + 1);
         return;
       }
 
@@ -185,9 +187,14 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
 
           <div className="mt-8 flex flex-col items-center gap-2 text-center">
             <span className="flex size-16 items-center justify-center rounded-full bg-white text-[#ff5b38] shadow-[0_14px_40px_rgba(255,91,56,0.12)] ring-1 ring-[#ffe0cf]">
-              <img src="/oppassum-logo.png" alt="" aria-hidden="true" className="size-12 object-contain" />
+              <img
+                src="/oppassum-logo.png"
+                alt=""
+                aria-hidden="true"
+                className="size-12 object-contain transition duration-200 hover:-translate-y-1 hover:scale-110"
+              />
             </span>
-            <p className="max-w-sm text-base font-medium text-[#3c4043]">
+            <p className="max-w-sm text-center text-base font-medium text-[#3c4043] md:max-w-none md:whitespace-nowrap md:text-lg">
               The Simpliest Peer to Peer Data Transfer Across Devices
             </p>
             <p className="text-sm font-medium text-[#ff5b38]">{roomStatusText}</p>
@@ -206,10 +213,16 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               />
             ) : null}
             {largeTransferWarning ? (
-              <StatusNotice title="Large transfer" detail={largeTransferWarning} tone="warning" />
+              <StatusNotice title="Large Transfer" detail={largeTransferWarning} tone="warning" />
             ) : null}
             {selectionPrompt ? (
-              <StatusNotice title="Select files first" detail={selectionPrompt} tone="warning" />
+              <StatusNotice
+                key={selectionPromptShakeKey}
+                title="Select Files First"
+                detail={selectionPrompt}
+                tone="warning"
+                isAttention
+              />
             ) : null}
             {fileTransfer.pendingFolderSelection ? (
               <div
@@ -265,6 +278,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 title={peerConnection.transferError.title}
                 detail={peerConnection.transferError.detail}
                 tone="error"
+                onDismiss={peerConnection.clearTransferError}
                 action={
                   peerConnection.transferError.canRetry ? (
                     <button
@@ -283,22 +297,23 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             ) : null}
             {fileTransfer.manifest ? (
               <div
-                className="relative z-20 w-full max-w-xl rounded-lg bg-white/96 px-4 py-3 text-sm shadow-[0_14px_36px_rgba(32,33,36,0.07)] ring-1 ring-[#eef0f4]"
+                className="relative z-20 w-full max-w-xl rounded-lg bg-white/96 px-4 py-3 text-sm shadow-[0_16px_42px_rgba(255,91,56,0.1)] ring-1 ring-[#ffd6c2]"
                 aria-label="Selected file manifest"
               >
                 <p className="font-semibold text-[#202124]">
                   {getTransferSelectionLabel(fileTransfer.manifest)}
                 </p>
                 <p className="mt-1 text-[#6b7280]">
-                  {formatBytes(fileTransfer.manifest.totalBytes)} ready to share. Click Send on a
-                  device to share with.
+                  {getTransferDisplayName(fileTransfer.manifest)} -{" "}
+                  {formatBytes(fileTransfer.manifest.totalBytes)} ready to share. Click Send on a device
+                  to share with.
                 </p>
                 <button
                   className="mt-2 text-sm font-semibold text-[#ff5b38] outline-none focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                   type="button"
                   onClick={fileTransfer.clearFiles}
                 >
-                  Clear selection
+                  Clear Selection
                 </button>
               </div>
             ) : null}
@@ -509,11 +524,11 @@ function getPeerStatusLabel(status: PeerConnectionStatus | undefined): string {
   }
 
   if (status === "data-channel-open") {
-    return "Data channel open";
+    return "Data Channel Open";
   }
 
   if (status === "failed") {
-    return "Connection failed";
+    return "Connection Failed";
   }
 
   if (status === "disconnected") {
@@ -538,7 +553,7 @@ function getConnectionStatusText(
   }
 
   if (status === "data-channel-open") {
-    return "Data channel open";
+    return "Data Channel Open";
   }
 
   if (status === "failed") {
@@ -569,7 +584,7 @@ function getRoomStatusText(roomState: SocketRoomState): string {
     return "No Devices Connected Yet";
   }
 
-  return `${roomState.peers.length} ${roomState.peers.length === 1 ? "device" : "devices"} connected`;
+  return `${roomState.peers.length} ${roomState.peers.length === 1 ? "Device" : "Devices"} Connected`;
 }
 
 function toDeviceKind(deviceType: DeviceType): "laptop" | "desktop" | "phone" | "tablet" | "unknown" {
@@ -596,23 +611,40 @@ function StatusNotice({
   title,
   detail,
   tone,
-  action
+  action,
+  onDismiss,
+  isAttention = false
 }: {
   title: string;
   detail: string;
   tone: "warning" | "error";
   action?: React.ReactNode;
+  onDismiss?: () => void;
+  isAttention?: boolean;
 }) {
   const color = tone === "error" ? "#c92a2a" : "#b7791f";
+  const ringColor = isAttention ? "ring-[#f2055c]" : "ring-[#eef0f4]";
 
   return (
     <section
-      className="relative z-20 w-full max-w-xl rounded-lg bg-white/96 px-4 py-3 text-left shadow-[0_14px_36px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
+      className={`relative z-20 w-full max-w-xl rounded-lg bg-white/96 px-4 py-3 text-left shadow-[0_14px_36px_rgba(32,33,36,0.08)] ring-1 ${ringColor} ${
+        isAttention ? "attention-shake" : ""
+      }`}
       aria-label={title}
     >
+      {onDismiss ? (
+        <button
+          className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full text-[#6b7280] outline-none transition hover:bg-[#f6f7f9] hover:text-[#202124] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+          type="button"
+          aria-label={`Dismiss ${title}`}
+          onClick={onDismiss}
+        >
+          <X aria-hidden="true" className="size-4" />
+        </button>
+      ) : null}
       <div className="flex items-start gap-3">
         <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0" style={{ color }} />
-        <div className="min-w-0 flex-1">
+        <div className={onDismiss ? "min-w-0 flex-1 pr-8" : "min-w-0 flex-1"}>
           <p className="text-sm font-semibold text-[#202124]">{title}</p>
           <p className="mt-1 text-sm text-[#6b7280]">{detail}</p>
           {action ? <div className="mt-3">{action}</div> : null}

@@ -12,8 +12,8 @@ test("two browser tabs discover each other through the signaling server", async 
   await firstPage.goto(`/?room=${roomId}`);
   await secondPage.goto(`/?room=${roomId}`);
 
-  await expect(firstPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
-  await expect(secondPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
+  await expect(firstPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
+  await expect(secondPage.getByText("1 Device Connected")).toBeVisible({ timeout: 15_000 });
   await expect(firstPage.getByRole("button", { name: /Computer|Device|Phone|Tablet/ })).toBeVisible();
   await expect(secondPage.getByRole("button", { name: /Computer|Device|Phone|Tablet/ })).toBeVisible();
 
