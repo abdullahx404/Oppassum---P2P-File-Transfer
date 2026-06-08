@@ -59,6 +59,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const [deviceNameDraft, setDeviceNameDraft] = React.useState(currentRoom.self.displayName);
   const [selectionPrompt, setSelectionPrompt] = React.useState<string | undefined>();
   const [selectionPromptShakeKey, setSelectionPromptShakeKey] = React.useState(0);
+  const [showWakeNotice, setShowWakeNotice] = React.useState(false);
+  const [isWakeNoticeLong, setWakeNoticeLong] = React.useState(false);
   const browserSupport = getBrowserSupportState();
   const largeTransferWarning = fileTransfer.manifest
     ? getLargeTransferWarning(fileTransfer.manifest.totalBytes)
@@ -73,6 +75,25 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   React.useEffect(() => {
     setDeviceNameDraft(currentRoom.self.displayName);
   }, [currentRoom.self.displayName]);
+
+  React.useEffect(() => {
+    if (roomState || currentRoom.status === "connected") {
+      setShowWakeNotice(false);
+      setWakeNoticeLong(false);
+      return undefined;
+    }
+
+    const wakeTimer = window.setTimeout(() => setShowWakeNotice(true), 5_000);
+    const longTimer = window.setTimeout(() => {
+      setShowWakeNotice(true);
+      setWakeNoticeLong(true);
+    }, 45_000);
+
+    return () => {
+      window.clearTimeout(wakeTimer);
+      window.clearTimeout(longTimer);
+    };
+  }, [currentRoom.status, roomState]);
 
   const saveDeviceName = React.useCallback(() => {
     currentRoom.updateDeviceName?.(deviceNameDraft);
@@ -207,9 +228,36 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             </p>
             {!browserSupport.isSupported && browserSupport.message ? (
               <StatusNotice
-                title="Browser limited"
+                title="Browser Limited"
                 detail={browserSupport.message}
                 tone="warning"
+              />
+            ) : null}
+            {showWakeNotice ? (
+              <StatusNotice
+                title={
+                  isWakeNoticeLong
+                    ? "Connection Is Taking Longer Than Expected"
+                    : "Secure Connection Is Waking Up"
+                }
+                detail={
+                  isWakeNoticeLong
+                    ? "Please retry while we keep reconnecting in the background."
+                    : "This can take up to 45 seconds."
+                }
+                tone="warning"
+                action={
+                  isWakeNoticeLong ? (
+                    <button
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
+                      type="button"
+                      onClick={currentRoom.reconnect}
+                    >
+                      <RotateCcw aria-hidden="true" className="size-4" />
+                      Retry
+                    </button>
+                  ) : undefined
+                }
               />
             ) : null}
             {largeTransferWarning ? (
@@ -221,6 +269,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 title="Select Files First"
                 detail={selectionPrompt}
                 tone="warning"
+                onDismiss={() => setSelectionPrompt(undefined)}
                 isAttention
               />
             ) : null}

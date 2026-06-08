@@ -23,6 +23,7 @@ export type SocketRoomState = {
   socket?: Socket;
   errorMessage?: string;
   updateDeviceName?: (displayName: string) => void;
+  reconnect?: () => void;
 };
 
 type UseSocketRoomOptions = {
@@ -52,7 +53,8 @@ export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomSta
 
     const socket = io(process.env.NEXT_PUBLIC_SIGNALING_URL ?? DEFAULT_SIGNALING_URL, {
       transports: ["websocket", "polling"],
-      reconnectionAttempts: 2
+      reconnection: true,
+      reconnectionDelayMax: 5_000
     });
     setSocketInstance(socket);
 
@@ -118,6 +120,9 @@ export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomSta
   return {
     ...state,
     socket: socketInstance,
+    reconnect: () => {
+      socketInstance?.connect();
+    },
     updateDeviceName: (displayName: string) => {
       const sanitizedName = sanitizeDeviceName(displayName);
 
