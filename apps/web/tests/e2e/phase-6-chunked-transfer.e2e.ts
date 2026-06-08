@@ -32,7 +32,7 @@ test("transfers small and medium files as WebRTC chunks and rebuilds download bl
   ]);
 
   await expect(firstPage.getByText("2 files selected")).toBeVisible();
-  await firstPage.getByRole("button", { name: /Computer, Ready|Device, Ready|Phone, Ready|Tablet, Ready/ }).click();
+  await firstPage.getByRole("button", { name: /, Ready/ }).first().click();
 
   await expect(secondPage.getByText("small.txt")).toBeVisible({ timeout: 20_000 });
   await secondPage.getByRole("button", { name: "Accept" }).click();

@@ -27,15 +27,57 @@ label {
 
 .radar-rings {
   position: absolute;
-  inset: -18vh -18vw;
-  background:
-    radial-gradient(circle at 50% 88%, transparent 0 7.5%, #eef0f4 7.6% 7.75%, transparent 7.85% 100%),
-    radial-gradient(circle at 50% 88%, transparent 0 18%, #eef0f4 18.1% 18.25%, transparent 18.35% 100%),
-    radial-gradient(circle at 50% 88%, transparent 0 30%, #eef0f4 30.1% 30.25%, transparent 30.35% 100%),
-    radial-gradient(circle at 50% 88%, transparent 0 43%, #eef0f4 43.1% 43.25%, transparent 43.35% 100%),
-    radial-gradient(circle at 50% 88%, transparent 0 57%, #eef0f4 57.1% 57.25%, transparent 57.35% 100%),
-    radial-gradient(circle at 50% 88%, transparent 0 72%, #eef0f4 72.1% 72.25%, transparent 72.35% 100%);
-  opacity: 0.95;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.radar-rings span {
+  position: absolute;
+  left: 50%;
+  top: 32%;
+  width: 18rem;
+  aspect-ratio: 1;
+  border: 3px solid #eef0f4;
+  border-radius: 9999px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1);
+  animation: radar-pulse 4s linear infinite;
+}
+
+.radar-rings span:nth-child(2) {
+  animation-delay: 1s;
+}
+
+.radar-rings span:nth-child(3) {
+  animation-delay: 2s;
+}
+
+.radar-rings span:nth-child(4) {
+  animation-delay: 3s;
+}
+
+@keyframes radar-pulse {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  85% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(8);
+  }
+}
+
+@media (max-width: 640px) {
+  .radar-rings span {
+    top: 28%;
+    width: 14rem;
+  }
 }
 
 .file-input-control {

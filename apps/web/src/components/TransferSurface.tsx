@@ -1,7 +1,7 @@
 "use client";
 
 import type { DeviceType } from "@oppassum/shared";
-import { AlertTriangle, Info, Radio, RotateCcw } from "lucide-react";
+import { AlertTriangle, Download, Info, Radio, RotateCcw, X } from "lucide-react";
 import React from "react";
 
 import { BrandMark } from "./BrandMark";
@@ -36,6 +36,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const currentRoom = roomState ?? liveRoomState;
   const peerConnection = useWebRtcPeer(currentRoom);
   const fileTransfer = useFileTransfer();
+  const [isInfoOpen, setInfoOpen] = React.useState(false);
+  const [deviceNameDraft, setDeviceNameDraft] = React.useState(currentRoom.self.displayName);
   const browserSupport = getBrowserSupportState();
   const largeTransferWarning = fileTransfer.manifest
     ? getLargeTransferWarning(fileTransfer.manifest.totalBytes)
@@ -45,23 +47,90 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     peerConnection.activePeerId,
     peerConnection.statuses
   );
+  const incomingSenderName = getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device";
+
+  React.useEffect(() => {
+    setDeviceNameDraft(currentRoom.self.displayName);
+  }, [currentRoom.self.displayName]);
+
+  const saveDeviceName = React.useCallback(() => {
+    currentRoom.updateDeviceName?.(deviceNameDraft);
+  }, [currentRoom, deviceNameDraft]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124]">
-      <div className="radar-rings" aria-hidden="true" />
+      <div className="radar-rings" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
 
       <header className="relative z-20 flex items-center justify-between gap-4 px-5 py-5 sm:px-8">
         <BrandMark />
-        <button
-          className="flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#eef0f4] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
-          type="button"
-          aria-label="Information"
-        >
-          <Info aria-hidden="true" className="size-6" />
-        </button>
+        <div className="relative">
+          <button
+            className="flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#eef0f4] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+            type="button"
+            aria-label="Information"
+            aria-expanded={isInfoOpen}
+            onClick={() => setInfoOpen((current) => !current)}
+            onMouseEnter={() => setInfoOpen(true)}
+          >
+            <Info aria-hidden="true" className="size-6" />
+          </button>
+          {isInfoOpen ? (
+            <>
+              <button
+                className="fixed inset-0 z-30 cursor-default bg-transparent"
+                type="button"
+                aria-label="Close information"
+                onClick={() => setInfoOpen(false)}
+              />
+              <section
+                className="absolute right-0 top-12 z-40 w-[min(90vw,320px)] rounded-lg bg-white p-4 text-sm shadow-[0_24px_70px_rgba(32,33,36,0.16)] ring-1 ring-[#e4e8f0]"
+                aria-label="How to use Oppassum"
+                onMouseLeave={() => setInfoOpen(false)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-semibold text-[#202124]">How to use</p>
+                  <button
+                    className="flex size-7 items-center justify-center rounded-full text-[#6b7280] outline-none hover:bg-[#f6f7f9] focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                    type="button"
+                    aria-label="Close"
+                    onClick={() => setInfoOpen(false)}
+                  >
+                    <X aria-hidden="true" className="size-4" />
+                  </button>
+                </div>
+                <ol className="mt-3 space-y-2 text-[#5f6673]">
+                  <li>1. Open this page on both devices.</li>
+                  <li>2. Select files or a folder.</li>
+                  <li>3. Pick the receiving device.</li>
+                  <li>4. Accept the request and download.</li>
+                </ol>
+                <label className="mt-4 block text-xs font-semibold text-[#3c4043]">
+                  This device name
+                  <input
+                    className="mt-2 h-10 w-full rounded-lg border border-[#dfe4ef] px-3 text-sm font-medium outline-none focus:border-[#5b82f6] focus:ring-2 focus:ring-[#5b82f6]/20"
+                    value={deviceNameDraft}
+                    onChange={(event) => setDeviceNameDraft(event.currentTarget.value)}
+                    onBlur={saveDeviceName}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        saveDeviceName();
+                        setInfoOpen(false);
+                      }
+                    }}
+                  />
+                </label>
+              </section>
+            </>
+          ) : null}
+        </div>
       </header>
 
-      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-[1440px] flex-col items-center px-5 pb-8 pt-8 sm:px-8 md:pt-16">
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-[1440px] flex-col items-center px-5 pb-6 pt-2 sm:px-8 md:pt-8">
         {currentRoom.peers.slice(0, peerPositions.length).map((peer, index) => (
           <DevicePeerCard
             key={peer.peerId}
@@ -89,9 +158,9 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             onDragActiveChange={fileTransfer.setDragActive}
           />
 
-          <div className="mt-12 flex flex-col items-center gap-3 text-center">
-            <span className="flex size-20 items-center justify-center rounded-full text-[#5b82f6] ring-1 ring-[#eef0f4]">
-              <Radio aria-hidden="true" className="size-12" strokeWidth={2.4} />
+          <div className="mt-8 flex flex-col items-center gap-2 text-center">
+            <span className="flex size-16 items-center justify-center rounded-full text-[#5b82f6] ring-1 ring-[#eef0f4]">
+              <Radio aria-hidden="true" className="size-10" strokeWidth={2.4} />
             </span>
             <p className="max-w-sm text-base font-medium text-[#3c4043]">
               The easiest way to transfer data across devices
@@ -145,7 +214,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   {fileTransfer.manifest.files.length === 1 ? "file" : "files"} selected
                 </p>
                 <p className="mt-1 text-[#6b7280]">
-                  {formatBytes(fileTransfer.manifest.totalBytes)} ready for manifest approval
+                  {formatBytes(fileTransfer.manifest.totalBytes)} ready to share. Select a device to
+                  share with.
                 </p>
                 <button
                   className="mt-2 text-sm font-semibold text-[#5b82f6] outline-none focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
@@ -184,10 +254,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           </div>
         </div>
 
-        {peerConnection.transferProgress ||
-        peerConnection.incomingOffer ||
-        peerConnection.outgoingStatus ? (
-          <div className="mt-8 grid w-full max-w-[1120px] gap-4 lg:grid-cols-[1fr_360px]">
+        {peerConnection.transferProgress || peerConnection.outgoingStatus ? (
+          <div className="mt-6 grid w-full max-w-[1120px] gap-4">
             {peerConnection.transferProgress ? (
               <ProgressPanel
                 title={getProgressTitle(peerConnection.transferProgress)}
@@ -196,16 +264,10 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 tone={peerConnection.transferProgress.direction === "receiving" ? "green" : "blue"}
               />
             ) : null}
-            {peerConnection.incomingOffer || peerConnection.outgoingStatus ? (
+            {peerConnection.outgoingStatus ? (
               <TransferDialog
-                manifest={peerConnection.incomingOffer?.manifest}
-                senderName={
-                  getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device"
-                }
-                title={peerConnection.incomingOffer ? "Incoming files" : "Transfer request"}
+                title="Transfer request"
                 statusText={getOutgoingStatusText(peerConnection.outgoingStatus)}
-                onAccept={peerConnection.acceptIncomingTransfer}
-                onReject={peerConnection.rejectIncomingTransfer}
               />
             ) : null}
           </div>
@@ -217,7 +279,16 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             className="mt-5 w-full max-w-[1120px] rounded-lg bg-white/94 p-4 shadow-[0_18px_48px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]"
             aria-label="Received files"
           >
-            <p className="text-sm font-semibold text-[#202124]">Received files</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-[#202124]">Received files</p>
+              <button
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#5b82f6]"
+                type="button"
+                onClick={peerConnection.clearReceivedFiles}
+              >
+                Clear downloads
+              </button>
+            </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {peerConnection.receivedFiles.map((file) => (
                 <a
@@ -226,8 +297,14 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   href={file.url}
                   download={file.relativePath ?? file.name}
                 >
-                  <span className="truncate">{file.relativePath ?? file.name}</span>
-                  <span className="shrink-0 text-xs text-[#6b7280]">{formatBytes(file.size)}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate">{file.relativePath ?? file.name}</span>
+                    <span className="block text-xs text-[#6b7280]">{formatBytes(file.size)}</span>
+                  </span>
+                  <span className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#5b82f6] px-3 py-2 text-xs font-semibold text-white">
+                    <Download aria-hidden="true" className="size-4" />
+                    Download
+                  </span>
                 </a>
               ))}
             </div>
@@ -239,6 +316,18 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           mid-transfer.
         </div>
       </section>
+
+      {peerConnection.incomingOffer ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#202124]/20 px-4 backdrop-blur-sm">
+          <TransferDialog
+            manifest={peerConnection.incomingOffer.manifest}
+            senderName={incomingSenderName}
+            title="Incoming files"
+            onAccept={peerConnection.acceptIncomingTransfer}
+            onReject={peerConnection.rejectIncomingTransfer}
+          />
+        </div>
+      ) : null}
     </main>
   );
 }

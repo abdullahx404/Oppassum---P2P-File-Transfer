@@ -22,7 +22,7 @@ test("shows rejection clearly and lets the sender retry the same selection", asy
     mimeType: "text/plain",
     buffer: Buffer.from("retry after rejection")
   });
-  await firstPage.getByRole("button", { name: /Computer, Ready|Device, Ready|Phone, Ready|Tablet, Ready/ }).click();
+  await firstPage.getByRole("button", { name: /, Ready/ }).first().click();
 
   await expect(secondPage.getByText("retry-me.txt")).toBeVisible({ timeout: 20_000 });
   await secondPage.getByRole("button", { name: "Reject" }).click();
@@ -60,7 +60,7 @@ test("reports a peer disconnect during a pending transfer without a stuck state"
     mimeType: "text/plain",
     buffer: Buffer.from("receiver leaves")
   });
-  await firstPage.getByRole("button", { name: /Computer, Ready|Device, Ready|Phone, Ready|Tablet, Ready/ }).click();
+  await firstPage.getByRole("button", { name: /, Ready/ }).first().click();
 
   await expect(secondPage.getByText("disconnect.txt")).toBeVisible({ timeout: 20_000 });
   await secondContext.close();

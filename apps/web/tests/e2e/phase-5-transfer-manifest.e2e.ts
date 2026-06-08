@@ -24,7 +24,7 @@ test("sender and receiver agree on a transfer manifest before file bytes are sen
   });
 
   await expect(firstPage.getByText("1 file selected")).toBeVisible();
-  await firstPage.getByRole("button", { name: /Computer, Ready|Device, Ready|Phone, Ready|Tablet, Ready/ }).click();
+  await firstPage.getByRole("button", { name: /, Ready/ }).first().click();
 
   await expect(secondPage.getByText("manifest-only.txt")).toBeVisible({ timeout: 20_000 });
   await secondPage.getByRole("button", { name: "Accept" }).click();

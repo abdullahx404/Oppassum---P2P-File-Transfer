@@ -90,7 +90,7 @@ describe("TransferSurface", () => {
 
     expect(screen.getByLabelText("Selected file manifest")).toBeInTheDocument();
     expect(screen.getByText("1 file selected")).toBeInTheDocument();
-    expect(screen.getByText("5 B ready for manifest approval")).toBeInTheDocument();
+    expect(screen.getByText(/5 B ready to share. Select a device to share with./)).toBeInTheDocument();
   });
 
   it("renders user-controlled names as text without executing markup", () => {

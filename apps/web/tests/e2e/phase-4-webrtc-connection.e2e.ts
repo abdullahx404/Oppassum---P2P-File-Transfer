@@ -15,7 +15,7 @@ test("opens a WebRTC data channel between two discovered peers", async ({ browse
   await expect(firstPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
   await expect(secondPage.getByText("1 device connected")).toBeVisible({ timeout: 15_000 });
 
-  await firstPage.getByRole("button", { name: /Computer, Ready|Device, Ready|Phone, Ready|Tablet, Ready/ }).click();
+  await firstPage.getByRole("button", { name: /, Ready/ }).first().click();
 
   await expect(firstPage.getByTestId("webrtc-connection-status")).toHaveText("Data channel open", {
     timeout: 20_000

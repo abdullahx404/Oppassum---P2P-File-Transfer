@@ -22,6 +22,7 @@ export type SocketRoomState = {
   peers: Peer[];
   socket?: Socket;
   errorMessage?: string;
+  updateDeviceName?: (displayName: string) => void;
 };
 
 type UseSocketRoomOptions = {
@@ -34,7 +35,8 @@ const DEFAULT_SIGNALING_URL = "http://localhost:4000";
 
 export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomState {
   const { enabled = true, roomId = getInitialRoomId(options.roomId) } = options;
-  const self = useMemo(() => createSessionPeer(), []);
+  const initialSelf = useMemo(() => createSessionPeer(), []);
+  const [self, setSelf] = useState<Peer>(initialSelf);
   const [state, setState] = useState<SocketRoomState>({
     status: "connecting",
     roomId,
@@ -115,7 +117,27 @@ export function useSocketRoom(options: UseSocketRoomOptions = {}): SocketRoomSta
 
   return {
     ...state,
-    socket: socketInstance
+    socket: socketInstance,
+    updateDeviceName: (displayName: string) => {
+      const sanitizedName = sanitizeDeviceName(displayName);
+
+      if (!sanitizedName || sanitizedName === self.displayName) {
+        return;
+      }
+
+      window.localStorage.setItem("oppassum.deviceName", sanitizedName);
+      setSelf((current) => ({
+        ...current,
+        displayName: sanitizedName
+      }));
+      setState((current) => ({
+        ...current,
+        self: {
+          ...current.self,
+          displayName: sanitizedName
+        }
+      }));
+    }
   };
 }
 
@@ -161,7 +183,7 @@ function createSessionPeer(): Peer {
   const peerId = existingPeerId ?? `peer-${crypto.randomUUID()}`;
   window.sessionStorage.setItem("oppassum.peerId", peerId);
 
-  return createPeer(peerId, getDeviceName(), getDeviceType());
+  return createPeer(peerId, getDeviceName(peerId), getDeviceType());
 }
 
 function createPeer(peerId: string, displayName: string, deviceType: DeviceType): Peer {
@@ -194,22 +216,102 @@ function getDeviceType(): DeviceType {
   return "unknown";
 }
 
-function getDeviceName(): string {
+function getDeviceName(peerId: string): string {
+  const savedName = window.localStorage.getItem("oppassum.deviceName");
+
+  if (savedName) {
+    return sanitizeDeviceName(savedName);
+  }
+
   const deviceType = getDeviceType();
+  const browserName = getBrowserName();
+  const suffix = peerId.replace("peer-", "").slice(0, 4).toUpperCase();
 
   if (deviceType === "phone") {
-    return "Phone";
+    return `${getPhoneName()} ${browserName} ${suffix}`;
   }
 
   if (deviceType === "tablet") {
-    return "Tablet";
+    return `${getTabletName()} ${browserName} ${suffix}`;
   }
 
   if (deviceType === "laptop") {
-    return "Computer";
+    return `${getComputerName()} ${browserName} ${suffix}`;
   }
 
-  return "Device";
+  return `Device ${suffix}`;
+}
+
+function getPhoneName(): string {
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  if (/iphone/.test(userAgent)) {
+    return "iPhone";
+  }
+
+  if (/android/.test(userAgent)) {
+    return "Android Phone";
+  }
+
+  return "Phone";
+}
+
+function getTabletName(): string {
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  if (/ipad/.test(userAgent)) {
+    return "iPad";
+  }
+
+  if (/android/.test(userAgent)) {
+    return "Android Tablet";
+  }
+
+  return "Tablet";
+}
+
+function getComputerName(): string {
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  if (/windows/.test(userAgent)) {
+    return "Windows Laptop";
+  }
+
+  if (/macintosh/.test(userAgent)) {
+    return "Mac";
+  }
+
+  if (/linux/.test(userAgent)) {
+    return "Linux Laptop";
+  }
+
+  return "Computer";
+}
+
+function getBrowserName(): string {
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  if (/edg\//.test(userAgent)) {
+    return "Edge";
+  }
+
+  if (/chrome|crios/.test(userAgent)) {
+    return "Chrome";
+  }
+
+  if (/firefox|fxios/.test(userAgent)) {
+    return "Firefox";
+  }
+
+  if (/safari/.test(userAgent)) {
+    return "Safari";
+  }
+
+  return "Browser";
+}
+
+function sanitizeDeviceName(displayName: string): string {
+  return displayName.trim().replace(/\s+/g, " ").slice(0, 80);
 }
 
 function getInitialRoomId(configuredRoomId: string | undefined): string {
