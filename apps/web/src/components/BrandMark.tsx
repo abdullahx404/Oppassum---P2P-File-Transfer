@@ -7,19 +7,13 @@ export function BrandMark() {
       href="/"
       aria-label="Oppassum home"
     >
-      <span className="flex size-11 items-center justify-center rounded-full bg-white shadow-[0_10px_30px_rgba(255,91,56,0.18)] ring-1 ring-[#ffe0cf]">
-        <img
-          src="/oppassum-logo.png"
-          alt=""
-          aria-hidden="true"
-          className="size-7 object-contain"
-        />
-      </span>
       <img
-        src="/oppassum-name.png"
-        alt="Oppassum"
-        className="h-8 w-auto object-contain sm:h-10"
+        src="/oppassum-logo-raw.png"
+        alt=""
+        aria-hidden="true"
+        className="size-11 object-contain sm:size-12"
       />
+      <img src="/oppassum-name.png" alt="Oppassum" className="h-8 w-auto object-contain sm:h-10" />
     </a>
   );
 }

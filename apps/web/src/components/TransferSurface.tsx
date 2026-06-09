@@ -21,7 +21,11 @@ import { TransferDialog } from "./TransferDialog";
 import { UploadTarget } from "./UploadTarget";
 import { useFileTransfer } from "../hooks/useFileTransfer";
 import { useWebRtcPeer, type PeerConnectionStatus } from "../hooks/useWebRtcPeer";
-import { createFallbackRoomState, useSocketRoom, type SocketRoomState } from "../hooks/useSocketRoom";
+import {
+  createFallbackRoomState,
+  useSocketRoom,
+  type SocketRoomState
+} from "../hooks/useSocketRoom";
 import { getTransferPercent, type ReceivedTransferFile } from "../lib/chunked-transfer";
 import { formatBytes, getTransferDisplayName, getTransferSelectionLabel } from "../lib/files";
 import {
@@ -32,6 +36,12 @@ import {
 
 type TransferSurfaceProps = {
   roomState?: SocketRoomState;
+};
+
+type TransferToast = {
+  id: number;
+  tone: "success" | "error";
+  message: string;
 };
 
 const peerPositions = [
@@ -45,21 +55,84 @@ function HeaderSunIcon() {
   return (
     <svg aria-hidden="true" className="header-control-icon size-5" fill="none" viewBox="0 0 24 24">
       <defs>
-        <linearGradient id="header-sun-gradient" x1="3" x2="21" y1="3" y2="21" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="header-sun-gradient"
+          x1="3"
+          x2="21"
+          y1="3"
+          y2="21"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop offset="0" stopColor="#f2055c" />
           <stop offset="0.56" stopColor="#ff5b38" />
           <stop offset="1" stopColor="#ffb000" />
         </linearGradient>
       </defs>
-      <circle cx="12" cy="12" r="4" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-      <path d="M12 2v2" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-      <path d="M12 20v2" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-      <path d="m4.93 4.93 1.41 1.41" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-      <path d="m17.66 17.66 1.41 1.41" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-      <path d="M2 12h2" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-      <path d="M20 12h2" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-      <path d="m6.34 17.66-1.41 1.41" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-      <path d="m19.07 4.93-1.41 1.41" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <circle
+        cx="12"
+        cy="12"
+        r="4"
+        stroke="url(#header-sun-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+      <path
+        d="M12 2v2"
+        stroke="url(#header-sun-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+      <path
+        d="M12 20v2"
+        stroke="url(#header-sun-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+      <path
+        d="m4.93 4.93 1.41 1.41"
+        stroke="url(#header-sun-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+      <path
+        d="m17.66 17.66 1.41 1.41"
+        stroke="url(#header-sun-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+      <path
+        d="M2 12h2"
+        stroke="url(#header-sun-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+      <path
+        d="M20 12h2"
+        stroke="url(#header-sun-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+      <path
+        d="m6.34 17.66-1.41 1.41"
+        stroke="url(#header-sun-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+      <path
+        d="m19.07 4.93-1.41 1.41"
+        stroke="url(#header-sun-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
     </svg>
   );
 }
@@ -68,7 +141,14 @@ function HeaderMoonIcon() {
   return (
     <svg aria-hidden="true" className="header-control-icon size-5" fill="none" viewBox="0 0 24 24">
       <defs>
-        <linearGradient id="header-moon-gradient" x1="4" x2="20" y1="3" y2="21" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="header-moon-gradient"
+          x1="4"
+          x2="20"
+          y1="3"
+          y2="21"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop offset="0" stopColor="#f2055c" />
           <stop offset="0.56" stopColor="#ff5b38" />
           <stop offset="1" stopColor="#ffb000" />
@@ -89,15 +169,42 @@ function HeaderInfoIcon() {
   return (
     <svg aria-hidden="true" className="header-control-icon size-6" fill="none" viewBox="0 0 24 24">
       <defs>
-        <linearGradient id="header-info-gradient" x1="3" x2="21" y1="3" y2="21" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="header-info-gradient"
+          x1="3"
+          x2="21"
+          y1="3"
+          y2="21"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop offset="0" stopColor="#f2055c" />
           <stop offset="0.56" stopColor="#ff5b38" />
           <stop offset="1" stopColor="#ffb000" />
         </linearGradient>
       </defs>
-      <circle cx="12" cy="12" r="9" stroke="url(#header-info-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" />
-      <path d="M12 11v5" stroke="url(#header-info-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" />
-      <path d="M12 8h.01" stroke="url(#header-info-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="url(#header-info-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.4"
+      />
+      <path
+        d="M12 11v5"
+        stroke="url(#header-info-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.4"
+      />
+      <path
+        d="M12 8h.01"
+        stroke="url(#header-info-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="3"
+      />
     </svg>
   );
 }
@@ -141,6 +248,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const [selectionPromptShakeKey, setSelectionPromptShakeKey] = React.useState(0);
   const [showWakeNotice, setShowWakeNotice] = React.useState(false);
   const [isWakeNoticeLong, setWakeNoticeLong] = React.useState(false);
+  const [transferToast, setTransferToast] = React.useState<TransferToast | undefined>();
+  const lastToastKey = React.useRef<string | undefined>(undefined);
   const browserSupport = getBrowserSupportState();
   const largeTransferWarning = fileTransfer.manifest
     ? getLargeTransferWarning(fileTransfer.manifest.totalBytes)
@@ -150,7 +259,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     peerConnection.activePeerId,
     peerConnection.statuses
   );
-  const incomingSenderName = getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device";
+  const incomingSenderName =
+    getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device";
 
   React.useEffect(() => {
     const savedTheme = window.localStorage.getItem("oppassum.theme");
@@ -179,13 +289,44 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     const longTimer = window.setTimeout(() => {
       setShowWakeNotice(true);
       setWakeNoticeLong(true);
-    }, 45_000);
+    }, 65_000);
 
     return () => {
       window.clearTimeout(wakeTimer);
       window.clearTimeout(longTimer);
     };
   }, [currentRoom.status, roomState]);
+
+  React.useEffect(() => {
+    const progress = peerConnection.transferProgress;
+    const error = peerConnection.transferError;
+    let nextToast: Omit<TransferToast, "id"> | undefined;
+    let nextKey: string | undefined;
+
+    if (progress?.status === "completed") {
+      nextToast = { tone: "success", message: "Transfer Completed" };
+      nextKey = `completed:${progress.transferId}:${progress.direction}`;
+    } else if (progress?.status === "failed") {
+      nextToast = { tone: "error", message: "Transfer Failed" };
+      nextKey = `failed:${progress.transferId}:${progress.direction}`;
+    } else if (error) {
+      const isRejected = error.title.toLowerCase().includes("rejected");
+
+      nextToast = { tone: "error", message: isRejected ? "Transfer Rejected" : "Transfer Failed" };
+      nextKey = `error:${error.title}:${error.detail}`;
+    }
+
+    if (!nextToast || !nextKey || lastToastKey.current === nextKey) {
+      return undefined;
+    }
+
+    lastToastKey.current = nextKey;
+    setTransferToast({ ...nextToast, id: Date.now() });
+
+    const timer = window.setTimeout(() => setTransferToast(undefined), 3_000);
+
+    return () => window.clearTimeout(timer);
+  }, [peerConnection.transferError, peerConnection.transferProgress]);
 
   const saveDeviceName = React.useCallback(() => {
     currentRoom.updateDeviceName?.(deviceNameDraft);
@@ -223,7 +364,10 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   );
 
   return (
-    <main className={`relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124] ${theme === "dark" ? "theme-dark" : ""}`}>
+    <main
+      className={`relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124] ${theme === "dark" ? "theme-dark" : ""}`}
+    >
+      {transferToast ? <TransferOutcomeToast toast={transferToast} /> : null}
       <header
         className={`relative flex items-center justify-between gap-4 px-5 py-5 sm:px-8 ${
           isInfoOpen ? "z-[60]" : "z-20"
@@ -241,11 +385,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               aria-pressed={theme === "dark"}
               onClick={toggleTheme}
             >
-              {theme === "dark" ? (
-                <HeaderMoonIcon />
-              ) : (
-                <HeaderSunIcon />
-              )}
+              {theme === "dark" ? <HeaderMoonIcon /> : <HeaderSunIcon />}
             </button>
           ) : null}
           <button
@@ -338,13 +478,13 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 detail={
                   isWakeNoticeLong
                     ? "Please retry while we keep reconnecting in the background."
-                    : "This can take up to 45 seconds."
+                    : "This can take up to 65 seconds."
                 }
                 tone="warning"
                 action={
                   isWakeNoticeLong ? (
                     <button
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
+                      className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
                       type="button"
                       onClick={currentRoom.reconnect}
                     >
@@ -375,11 +515,14 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               >
                 <p className="font-semibold text-[#202124]">
                   {fileTransfer.pendingFolderSelection.folderRoots.length}{" "}
-                  {fileTransfer.pendingFolderSelection.folderRoots.length === 1 ? "Folder" : "Folders"} Selected
+                  {fileTransfer.pendingFolderSelection.folderRoots.length === 1
+                    ? "Folder"
+                    : "Folders"}{" "}
+                  Selected
                 </p>
                 <p className="mt-1 text-[#6b7280]">
-                  {formatBytes(fileTransfer.pendingFolderSelection.totalBytes)} ready. Upload as one ZIP
-                  file or as separate files.
+                  {formatBytes(fileTransfer.pendingFolderSelection.totalBytes)} ready. Upload as one
+                  ZIP file or as separate files.
                 </p>
                 {fileTransfer.folderSelectionError ? (
                   <p className="mt-2 text-xs font-semibold text-[#c92a2a]">
@@ -426,7 +569,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 action={
                   peerConnection.transferError.canRetry ? (
                     <button
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
+                      className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
                       type="button"
                       onClick={() => {
                         void peerConnection.retryLastTransfer();
@@ -449,11 +592,11 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 </p>
                 <p className="mt-1 text-[#6b7280]">
                   {getTransferDisplayName(fileTransfer.manifest)} -{" "}
-                  {formatBytes(fileTransfer.manifest.totalBytes)} ready to share. Click Send on a device
-                  to share with.
+                  {formatBytes(fileTransfer.manifest.totalBytes)} ready to share. Click Send on a
+                  device to share with.
                 </p>
                 <button
-                  className="mt-2 text-sm font-semibold text-[#ff5b38] outline-none focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+                  className="mt-3 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-[#fff4ed] px-4 text-sm font-semibold text-[#ff5b38] outline-none ring-1 ring-[#ffd6c2] transition hover:bg-[#ffeade] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                   type="button"
                   onClick={fileTransfer.clearFiles}
                 >
@@ -462,7 +605,10 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               </div>
             ) : null}
             {currentRoom.peers.length > 0 ? (
-              <div className="relative z-20 grid w-full max-w-xl justify-items-center gap-2 md:hidden" aria-label="Nearby devices">
+              <div
+                className="relative z-20 grid w-full max-w-xl justify-items-center gap-2 md:hidden"
+                aria-label="Nearby devices"
+              >
                 {currentRoom.peers.map((peer) => (
                   <MobilePeerButton
                     key={peer.peerId}
@@ -548,8 +694,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         ) : null}
 
         <div className="sr-only" aria-live="polite">
-          Drag-over state active. File selected. Sending progress. Receiving progress. Peer Disconnected
-          mid-transfer.
+          Drag-over state active. File selected. Sending progress. Receiving progress. Peer
+          Disconnected mid-transfer.
         </div>
       </section>
 
@@ -600,7 +746,7 @@ function MobilePeerButton({
         </span>
       </span>
       {canSend ? (
-        <span className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-xs font-semibold text-white">
+        <span className="inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-xs font-semibold text-white">
           Send
         </span>
       ) : null}
@@ -654,11 +800,14 @@ function InfoOverlay({
         <div className="mt-8 w-full rounded-lg bg-white/10 p-5 text-left ring-1 ring-white/20 backdrop-blur">
           <p className="text-lg font-bold text-white">Instructions</p>
           <ol className="mt-3 space-y-2 text-sm leading-6 text-white/90 sm:text-base">
-            <li>1. Open this page on both devices.</li>
+            <li>1. Open oppassum.vercel.app on both devices.</li>
             <li>2. Select files or a folder.</li>
             <li>3. Click Send on the receiving device.</li>
-            <li>4. Accept the request on the other device.</li>
+            <li>4. Accept the request on the receiving device.</li>
             <li>5. Keep both devices awake until the transfer finishes.</li>
+            <li>
+              6. Oppassum uses your WiFi Bandwidth, thus transfer speed depends on your WiFi speed.
+            </li>
           </ol>
         </div>
         <div className="mt-5 grid w-full gap-3 rounded-lg bg-white/10 p-4 text-left ring-1 ring-white/20 backdrop-blur sm:grid-cols-[1fr_auto] sm:items-end">
@@ -814,7 +963,9 @@ function getRoomStatusText(roomState: SocketRoomState): string {
   return `${roomState.peers.length} ${roomState.peers.length === 1 ? "Device" : "Devices"} Connected`;
 }
 
-function toDeviceKind(deviceType: DeviceType): "laptop" | "desktop" | "phone" | "tablet" | "unknown" {
+function toDeviceKind(
+  deviceType: DeviceType
+): "laptop" | "desktop" | "phone" | "tablet" | "unknown" {
   return deviceType;
 }
 
@@ -850,7 +1001,7 @@ function StatusNotice({
   isAttention?: boolean;
 }) {
   const color = tone === "error" ? "#c92a2a" : "#b7791f";
-  const ringColor = isAttention ? "ring-[#f2055c]" : "ring-[#eef0f4]";
+  const ringColor = isAttention ? "ring-[#f2055c]" : "ring-[#ffd6c2]";
 
   return (
     <section
@@ -861,7 +1012,7 @@ function StatusNotice({
     >
       {onDismiss ? (
         <button
-          className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full text-[#6b7280] outline-none transition hover:bg-[#f6f7f9] hover:text-[#202124] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+          className="absolute right-3 top-3 flex size-8 cursor-pointer items-center justify-center text-[#6b7280] outline-none transition hover:text-[#202124] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
           type="button"
           aria-label={`Dismiss ${title}`}
           onClick={onDismiss}
@@ -874,9 +1025,37 @@ function StatusNotice({
         <div className={onDismiss ? "min-w-0 flex-1 pr-8" : "min-w-0 flex-1"}>
           <p className="text-sm font-semibold text-[#202124]">{title}</p>
           <p className="mt-1 text-sm text-[#6b7280]">{detail}</p>
-          {action ? <div className="mt-3">{action}</div> : null}
+          {action ? <div className="mt-3 flex justify-end">{action}</div> : null}
         </div>
       </div>
     </section>
+  );
+}
+
+function TransferOutcomeToast({ toast }: { toast: TransferToast }) {
+  const isSuccess = toast.tone === "success";
+
+  return (
+    <div
+      key={toast.id}
+      className={`transfer-toast fixed left-1/2 top-[10%] z-[80] flex h-[50px] w-[50px] -translate-x-1/2 items-center justify-start overflow-hidden rounded-full bg-white shadow-[0_8px_24px_rgba(32,33,36,0.16)] ${
+        isSuccess ? "transfer-toast-success" : "transfer-toast-error"
+      }`}
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex w-full items-center whitespace-nowrap pl-[13px]">
+        {isSuccess ? (
+          <svg aria-hidden="true" className="size-6 shrink-0 fill-[#4caf50]" viewBox="0 0 24 24">
+            <path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+          </svg>
+        ) : (
+          <X aria-hidden="true" className="size-6 shrink-0 text-[#c92a2a]" />
+        )}
+        <span className="transfer-toast-text ml-2.5 text-sm font-bold text-[#202124]">
+          {toast.message}
+        </span>
+      </div>
+    </div>
   );
 }

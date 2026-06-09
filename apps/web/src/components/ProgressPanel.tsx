@@ -9,14 +9,20 @@ type ProgressPanelProps = {
   onDismiss?: () => void;
 };
 
-export function ProgressPanel({ title, detail, value, tone = "blue", onDismiss }: ProgressPanelProps) {
+export function ProgressPanel({
+  title,
+  detail,
+  value,
+  tone = "blue",
+  onDismiss
+}: ProgressPanelProps) {
   const color = tone === "green" ? "#2f9e44" : "#ff5b38";
 
   return (
     <div className="relative min-w-0 rounded-lg bg-white/92 p-4 shadow-[0_18px_45px_rgba(32,33,36,0.08)] ring-1 ring-[#eef0f4]">
       {onDismiss ? (
         <button
-          className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full text-[#6b7280] outline-none transition hover:bg-[#f6f7f9] hover:text-[#202124] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+          className="absolute right-3 top-3 flex size-8 cursor-pointer items-center justify-center text-[#6b7280] outline-none transition hover:text-[#202124] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
           type="button"
           aria-label={`Dismiss ${title}`}
           onClick={onDismiss}

@@ -34,7 +34,7 @@ export function DevicePeerCard({
 
   return (
     <button
-      className={`absolute z-30 hidden w-[160px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 rounded-lg bg-white/92 px-4 py-3 text-center shadow-[0_18px_45px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] backdrop-blur outline-none transition duration-200 hover:-translate-y-[calc(50%+4px)] hover:scale-[1.03] hover:bg-white hover:shadow-[0_24px_60px_rgba(255,91,56,0.18)] hover:ring-[#ffb38b] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] md:flex ${positionClassName}`}
+      className={`absolute z-30 hidden w-[160px] -translate-x-1/2 -translate-y-1/2 cursor-pointer flex-col items-center gap-2 rounded-lg bg-white/92 px-4 py-3 text-center shadow-[0_18px_45px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] backdrop-blur outline-none transition duration-200 hover:-translate-y-[calc(50%+4px)] hover:scale-[1.03] hover:bg-white hover:shadow-[0_24px_60px_rgba(255,91,56,0.18)] hover:ring-[#ffb38b] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] md:flex ${positionClassName}`}
       type="button"
       aria-label={`${name}, ${status}`}
       onClick={onSelect}
