@@ -97,6 +97,14 @@ label {
   animation: info-close-fade 500ms ease 500ms both;
 }
 
+.header-control-icon {
+  stroke: url("#header-control-gradient");
+}
+
+.header-control:hover .header-control-icon {
+  stroke: #ffffff;
+}
+
 @keyframes info-expand {
   0% {
     clip-path: circle(1.5rem at calc(100% - 2.5rem) 3rem);
@@ -104,14 +112,19 @@ label {
   }
 
   100% {
-    clip-path: circle(150% at calc(100% - 2.5rem) 3rem);
+    clip-path: circle(125vmax at calc(100% - 2.5rem) 3rem);
     opacity: 1;
   }
 }
 
 @keyframes info-collapse {
   0% {
-    clip-path: circle(150% at calc(100% - 2.5rem) 3rem);
+    clip-path: circle(125vmax at calc(100% - 2.5rem) 3rem);
+    opacity: 1;
+  }
+
+  15% {
+    clip-path: circle(80vmax at calc(100% - 2.5rem) 3rem);
     opacity: 1;
   }
 

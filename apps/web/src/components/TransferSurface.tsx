@@ -166,6 +166,15 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
 
   return (
     <main className={`relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124] ${theme === "dark" ? "theme-dark" : ""}`}>
+      <svg aria-hidden="true" className="pointer-events-none absolute size-0">
+        <defs>
+          <linearGradient id="header-control-gradient" x1="0%" x2="100%" y1="0%" y2="100%">
+            <stop offset="0%" stopColor="#f2055c" />
+            <stop offset="56%" stopColor="#ff5b38" />
+            <stop offset="100%" stopColor="#ffb000" />
+          </linearGradient>
+        </defs>
+      </svg>
       <header
         className={`relative flex items-center justify-between gap-4 px-5 py-5 sm:px-8 ${
           isInfoOpen ? "z-[60]" : "z-20"
@@ -177,16 +186,16 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         <div className="relative flex items-center gap-3">
           {!isInfoOpen ? (
             <button
-              className="flex size-10 cursor-pointer items-center justify-center rounded-full bg-[#ffffff]/70 text-[#3c4043] shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition hover:bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] hover:text-white focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+              className="header-control flex size-10 cursor-pointer items-center justify-center rounded-full bg-[#ffffff]/70 text-[#3c4043] shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition hover:bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
               type="button"
               aria-label={theme === "dark" ? "Switch To Light Theme" : "Switch To Dark Theme"}
               aria-pressed={theme === "dark"}
               onClick={toggleTheme}
             >
               {theme === "dark" ? (
-                <Moon aria-hidden="true" className="size-5" />
+                <Moon aria-hidden="true" className="header-control-icon size-5" />
               ) : (
-                <Sun aria-hidden="true" className="size-5" />
+                <Sun aria-hidden="true" className="header-control-icon size-5" />
               )}
             </button>
           ) : null}
@@ -194,7 +203,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             className={`flex size-10 cursor-pointer items-center justify-center rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-[#ff7a1a] ${
               isInfoOpen
                 ? "fixed right-5 top-5 z-[60] bg-transparent text-white hover:bg-[rgba(255,255,255,0.14)] hover:ring-1 hover:ring-white/35 sm:right-8"
-                : "bg-[#ffffff]/70 text-[#3c4043] ring-1 ring-[#ffe0cf] hover:bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] hover:text-white"
+                : "header-control bg-[#ffffff]/70 text-[#3c4043] ring-1 ring-[#ffe0cf] hover:bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)]"
             }`}
             type="button"
             aria-label={isInfoOpen ? "Close information" : "Information"}
@@ -204,7 +213,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             {isInfoOpen ? (
               <X aria-hidden="true" className="info-close-icon size-5" />
             ) : (
-              <Info aria-hidden="true" className="size-6" />
+              <Info aria-hidden="true" className="header-control-icon size-6" />
             )}
           </button>
           {isInfoOpen ? (
