@@ -51,7 +51,7 @@ export function DevicePeerCard({
       <span className="w-full truncate text-sm font-semibold text-[#202124]">{name}</span>
       <span className="w-full truncate text-xs text-[#6b7280]">{status}</span>
       {canSend ? (
-        <span className="mt-1 inline-flex h-8 w-full items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-xs font-semibold text-white shadow-[0_10px_24px_rgba(255,91,56,0.2)]">
+        <span className="mt-1 inline-flex h-8 w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-xs font-semibold text-white shadow-[0_10px_24px_rgba(255,91,56,0.2)]">
           Send
         </span>
       ) : null}

@@ -53,6 +53,7 @@ type TransferToast = {
   message: string;
   detail?: string;
   durationMs: number;
+  widthPx: number;
 };
 
 const peerPositions = [
@@ -259,6 +260,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const transferToastTimer = React.useRef<number | undefined>(undefined);
   const lastProgressToastKey = React.useRef<string | undefined>(undefined);
   const lastErrorToast = React.useRef<TransferError | undefined>(undefined);
+  const lastOutgoingToastKey = React.useRef<string | undefined>(undefined);
   const didShowWakeToast = React.useRef(false);
   const browserSupport = getBrowserSupportState();
   const largeTransferWarning = fileTransfer.manifest
@@ -269,13 +271,22 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device";
 
   const showToast = React.useCallback(
-    (toast: Omit<TransferToast, "id" | "durationMs"> & { durationMs?: number }) => {
+    (
+      toast: Omit<TransferToast, "id" | "durationMs" | "widthPx"> & {
+        durationMs?: number;
+      }
+    ) => {
       if (transferToastTimer.current) {
         window.clearTimeout(transferToastTimer.current);
       }
 
       const durationMs = toast.durationMs ?? 3_000;
-      setTransferToast({ ...toast, id: Date.now(), durationMs });
+      setTransferToast({
+        ...toast,
+        id: Date.now(),
+        durationMs,
+        widthPx: getToastWidth(toast.message, toast.detail)
+      });
       transferToastTimer.current = window.setTimeout(() => {
         setTransferToast(undefined);
         transferToastTimer.current = undefined;
@@ -340,7 +351,9 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   React.useEffect(() => {
     const progress = peerConnection.transferProgress;
     const error = peerConnection.transferError;
-    let nextToast: (Omit<TransferToast, "id" | "durationMs"> & { durationMs?: number }) | undefined;
+    let nextToast:
+      | (Omit<TransferToast, "id" | "durationMs" | "widthPx"> & { durationMs?: number })
+      | undefined;
     let nextKey: string | undefined;
 
     if (error && lastErrorToast.current !== error) {
@@ -380,6 +393,55 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     return undefined;
   }, [peerConnection.transferError, peerConnection.transferProgress, showToast]);
 
+  React.useEffect(() => {
+    const status = peerConnection.outgoingStatus;
+
+    if (!status) {
+      lastOutgoingToastKey.current = undefined;
+      return undefined;
+    }
+
+    const key = `${status.transferId}:${status.status}`;
+
+    if (lastOutgoingToastKey.current === key) {
+      return undefined;
+    }
+
+    lastOutgoingToastKey.current = key;
+
+    if (status.status === "pending") {
+      showToast({
+        tone: "warning",
+        message: "Transfer Request",
+        detail: "Waiting for receiver approval",
+        durationMs: 600_000
+      });
+      return undefined;
+    }
+
+    if (status.status === "accepted") {
+      showToast({
+        tone: "success",
+        message: "Transfer Accepted"
+      });
+    }
+
+    return undefined;
+  }, [peerConnection.outgoingStatus, showToast]);
+
+  React.useEffect(() => {
+    if (
+      transferToast?.message === "Select Files First" &&
+      (fileTransfer.files.length > 0 || fileTransfer.pendingFolderSelection)
+    ) {
+      setTransferToast(undefined);
+      if (transferToastTimer.current) {
+        window.clearTimeout(transferToastTimer.current);
+        transferToastTimer.current = undefined;
+      }
+    }
+  }, [fileTransfer.files.length, fileTransfer.pendingFolderSelection, transferToast?.message]);
+
   const saveDeviceName = React.useCallback(() => {
     currentRoom.updateDeviceName?.(deviceNameDraft);
   }, [currentRoom, deviceNameDraft]);
@@ -407,7 +469,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         showToast({
           tone: "warning",
           message: "Select Files First",
-          durationMs: 2_000
+          durationMs: 4_000
         });
         return;
       }
@@ -423,7 +485,6 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     fileTransfer.manifest ||
     peerConnection.transferError ||
     peerConnection.transferProgress ||
-    peerConnection.outgoingStatus ||
     peerConnection.receivedFiles.length > 0 ||
     largeTransferWarning ||
     !browserSupport.isSupported
@@ -564,7 +625,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 ) : null}
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
                   <button
-                    className="inline-flex h-10 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
+                    className="inline-flex h-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
                     type="button"
                     disabled={fileTransfer.isPreparingFolder}
                     onClick={() => {
@@ -574,7 +635,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                     Upload as ZIP
                   </button>
                   <button
-                    className="inline-flex h-10 items-center justify-center rounded-lg bg-[#fff4ed] px-3 text-sm font-semibold text-[#ff5b38] outline-none ring-1 ring-[#ffd6c2] transition hover:bg-[#ffeade] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] disabled:cursor-wait disabled:opacity-70"
+                    className="inline-flex h-10 items-center justify-center rounded-full bg-[#fff4ed] px-3 text-sm font-semibold text-[#ff5b38] outline-none ring-1 ring-[#ffd6c2] transition hover:bg-[#ffeade] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] disabled:cursor-wait disabled:opacity-70"
                     type="button"
                     disabled={fileTransfer.isPreparingFolder}
                     onClick={() => {
@@ -584,7 +645,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                     Upload Only Files
                   </button>
                   <button
-                    className="inline-flex h-10 items-center justify-center rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+                    className="inline-flex h-10 items-center justify-center rounded-full bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                     type="button"
                     onClick={fileTransfer.clearFiles}
                   >
@@ -602,7 +663,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 action={
                   peerConnection.transferError.canRetry ? (
                     <button
-                      className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
+                      className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-4 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
                       type="button"
                       onClick={() => {
                         void peerConnection.retryLastTransfer();
@@ -629,7 +690,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   device to share with.
                 </p>
                 <button
-                  className="mt-3 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-[#fff4ed] px-4 text-sm font-semibold text-[#ff5b38] outline-none ring-1 ring-[#ffd6c2] transition hover:bg-[#ffeade] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+                  className="mt-3 inline-flex h-9 cursor-pointer items-center justify-center rounded-full bg-[#fff4ed] px-5 text-sm font-semibold text-[#ff5b38] outline-none ring-1 ring-[#ffd6c2] transition hover:bg-[#ffeade] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                   type="button"
                   onClick={fileTransfer.clearFiles}
                 >
@@ -661,7 +722,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
           </div>
         </div>
 
-        {peerConnection.transferProgress || peerConnection.outgoingStatus ? (
+        {peerConnection.transferProgress ? (
           <div className="relative z-20 mt-6 grid w-full max-w-xl gap-4">
             {peerConnection.transferProgress ? (
               <ProgressPanel
@@ -674,12 +735,6 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                     ? peerConnection.cancelTransferProgress
                     : peerConnection.clearTransferProgress
                 }
-              />
-            ) : null}
-            {peerConnection.outgoingStatus ? (
-              <TransferDialog
-                title="Transfer Request"
-                statusText={getOutgoingStatusText(peerConnection.outgoingStatus)}
               />
             ) : null}
           </div>
@@ -695,7 +750,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               <p className="text-sm font-semibold text-[#202124]">Received Files</p>
               <div className="flex flex-wrap gap-2">
                 <button
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-4 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                   type="button"
                   onClick={() => {
                     void downloadFiles(peerConnection.receivedFiles);
@@ -705,7 +760,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   Download All
                 </button>
                 <button
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[#f6f7f9] px-4 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                   type="button"
                   onClick={peerConnection.clearReceivedFiles}
                 >
@@ -727,7 +782,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                       {formatBytes(file.size)} - Received {formatReceivedTime(file.receivedAt)}
                     </span>
                   </span>
-                  <span className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-5 py-2 text-xs font-semibold text-white">
+                  <span className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-5 py-2 text-xs font-semibold text-white">
                     <Download aria-hidden="true" className="size-4" />
                     Download
                   </span>
@@ -789,7 +844,7 @@ function MobilePeerButton({
         </span>
       </span>
       {canSend ? (
-        <span className="inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-xs font-semibold text-white">
+        <span className="inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-4 text-xs font-semibold text-white">
           Send
         </span>
       ) : null}
@@ -908,7 +963,7 @@ function InfoOverlay({
             />
           </label>
           <button
-            className="inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-bold text-[#ff5b38] outline-none transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(255,255,255,0.2)] focus-visible:ring-2 focus-visible:ring-white"
+            className="inline-flex h-11 cursor-pointer items-center justify-center rounded-full bg-white px-6 text-sm font-bold text-[#ff5b38] outline-none transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(255,255,255,0.2)] focus-visible:ring-2 focus-visible:ring-white"
             type="button"
             onClick={onSaveDeviceName}
           >
@@ -940,24 +995,6 @@ function getPeerName(roomState: SocketRoomState, peerId: string | undefined): st
   }
 
   return roomState.peers.find((peer) => peer.peerId === peerId)?.displayName;
-}
-
-function getOutgoingStatusText(
-  status: { status: "pending" | "accepted" | "rejected" } | undefined
-): string | undefined {
-  if (!status) {
-    return undefined;
-  }
-
-  if (status.status === "accepted") {
-    return "Transfer manifest accepted";
-  }
-
-  if (status.status === "rejected") {
-    return "Transfer manifest rejected";
-  }
-
-  return "Waiting for receiver approval";
 }
 
 function getProgressTitle(progress: {
@@ -1024,6 +1061,13 @@ function formatReceivedTime(receivedAt: number): string {
     hour: "numeric",
     minute: "2-digit"
   }).format(receivedAt);
+}
+
+function getToastWidth(message: string, detail?: string): number {
+  const longestText = Math.max(message.length, detail?.length ?? 0);
+  const estimatedTextWidth = longestText * 8.5;
+
+  return Math.min(420, Math.max(50, Math.ceil(26 + 24 + 10 + estimatedTextWidth + 26)));
 }
 
 export const previewRoomState = createFallbackRoomState({
@@ -1100,9 +1144,14 @@ function TransferOutcomeToast({ toast }: { toast: TransferToast }) {
       className="transfer-toast fixed left-1/2 top-[10%] z-[80] flex min-h-[50px] w-[50px] -translate-x-1/2 items-center justify-start overflow-hidden rounded-full bg-white shadow-[0_8px_24px_rgba(32,33,36,0.16)]"
       role="status"
       aria-live="polite"
-      style={{ "--toast-duration": `${toast.durationMs}ms` } as React.CSSProperties}
+      style={
+        {
+          "--toast-duration": `${toast.durationMs}ms`,
+          "--toast-width": `${toast.widthPx}px`
+        } as React.CSSProperties
+      }
     >
-      <div className="flex w-full items-center whitespace-nowrap pl-[13px]">
+      <div className="flex w-max items-center justify-center whitespace-nowrap px-[13px]">
         {icon}
         <span className="transfer-toast-text ml-2.5 grid gap-0.5 text-sm font-bold text-[#202124]">
           <span>{toast.message}</span>

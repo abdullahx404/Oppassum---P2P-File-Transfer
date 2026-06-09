@@ -25,7 +25,8 @@ export function TransferDialog({
   onAccept,
   onReject
 }: TransferDialogProps) {
-  const detail = statusText ?? `${manifest ? getTransferItemLabel(manifest) : "Files"} from ${senderName}`;
+  const detail =
+    statusText ?? `${manifest ? getTransferItemLabel(manifest) : "Files"} from ${senderName}`;
   const displayName = manifest ? getTransferDisplayName(manifest, title) : title;
 
   return (
@@ -47,7 +48,7 @@ export function TransferDialog({
       {manifest && onAccept && onReject ? (
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-4 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
             type="button"
             onClick={onAccept}
           >
@@ -55,7 +56,7 @@ export function TransferDialog({
             Accept
           </button>
           <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#f6f7f9] px-3 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-[#f6f7f9] px-4 text-sm font-semibold text-[#3c4043] outline-none transition hover:bg-[#eceff3] focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
             type="button"
             onClick={onReject}
           >

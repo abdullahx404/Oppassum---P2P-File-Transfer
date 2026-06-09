@@ -74,7 +74,7 @@ export function UploadTarget({
         </span>
       </label>
 
-      <label className="mt-7 inline-flex h-14 cursor-pointer items-center justify-center gap-3 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-10 text-lg font-semibold text-white shadow-[0_20px_60px_rgba(255,91,56,0.22)] outline-none transition hover:-translate-y-0.5 hover:brightness-95 hover:shadow-[0_24px_70px_rgba(255,91,56,0.28)] focus-within:ring-2 focus-within:ring-[#ff7a1a] focus-within:ring-offset-2">
+      <label className="mt-7 inline-flex h-14 cursor-pointer items-center justify-center gap-3 rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-10 text-lg font-semibold text-white shadow-[0_20px_60px_rgba(255,91,56,0.22)] outline-none transition hover:-translate-y-0.5 hover:brightness-95 hover:shadow-[0_24px_70px_rgba(255,91,56,0.28)] focus-within:ring-2 focus-within:ring-[#ff7a1a] focus-within:ring-offset-2">
         <input
           className="file-input-control"
           type="file"

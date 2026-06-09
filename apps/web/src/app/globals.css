@@ -82,6 +82,7 @@ label {
 
 .transfer-toast {
   --toast-duration: 3000ms;
+  --toast-width: 220px;
   border-radius: 9999px;
   animation:
     transfer-toast-fade-in 300ms ease-out forwards,
@@ -207,7 +208,7 @@ label {
   }
 
   to {
-    width: min(420px, calc(100vw - 2rem));
+    width: min(var(--toast-width), calc(100vw - 2rem));
     padding-right: 20px;
   }
 }
@@ -234,7 +235,7 @@ label {
 
 @keyframes transfer-toast-shrink {
   from {
-    width: min(420px, calc(100vw - 2rem));
+    width: min(var(--toast-width), calc(100vw - 2rem));
     padding-right: 20px;
   }
 

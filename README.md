@@ -32,6 +32,7 @@ The app uses a signaling service only to help browsers discover and negotiate a 
 - v1.1.0: WebRTC transfer flow, chunked transfer handling, progress states, and receiver approval.
 - v2.0.0: Security tightening with local network scoped discovery and safer room handling.
 - v2.1.0: Dark theme, branded info panel, improved controls, and final UI polish.
+- v3.0.0: Pill-based transfer feedback, cleaner status messaging, rounded controls, and minor bug fixes.
 
 ## Documents
 
