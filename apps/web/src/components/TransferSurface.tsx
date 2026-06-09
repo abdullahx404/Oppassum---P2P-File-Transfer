@@ -30,13 +30,18 @@ import {
   useSocketRoom,
   type SocketRoomState
 } from "../hooks/useSocketRoom";
-import { getTransferPercent, type ReceivedTransferFile } from "../lib/chunked-transfer";
+import {
+  getTransferPercent,
+  type ReceivedTransferFile,
+  type TransferProgressSnapshot
+} from "../lib/chunked-transfer";
 import { formatBytes, getTransferDisplayName, getTransferSelectionLabel } from "../lib/files";
 import {
   getBrowserSupportState,
   getLargeTransferWarning,
   getProgressDetail
 } from "../lib/transfer-health";
+import { createStoredZipFile } from "../lib/zip";
 
 type TransferSurfaceProps = {
   roomState?: SocketRoomState;
@@ -44,8 +49,10 @@ type TransferSurfaceProps = {
 
 type TransferToast = {
   id: number;
-  tone: "success" | "error";
+  tone: "success" | "error" | "warning";
   message: string;
+  detail?: string;
+  durationMs: number;
 };
 
 const peerPositions = [
@@ -248,24 +255,43 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const [isInfoClosing, setInfoClosing] = React.useState(false);
   const [theme, setTheme] = React.useState<"light" | "dark">("light");
   const [deviceNameDraft, setDeviceNameDraft] = React.useState(currentRoom.self.displayName);
-  const [selectionPrompt, setSelectionPrompt] = React.useState<string | undefined>();
-  const [selectionPromptShakeKey, setSelectionPromptShakeKey] = React.useState(0);
-  const [showWakeNotice, setShowWakeNotice] = React.useState(false);
-  const [isWakeNoticeLong, setWakeNoticeLong] = React.useState(false);
   const [transferToast, setTransferToast] = React.useState<TransferToast | undefined>();
+  const transferToastTimer = React.useRef<number | undefined>(undefined);
   const lastProgressToastKey = React.useRef<string | undefined>(undefined);
   const lastErrorToast = React.useRef<TransferError | undefined>(undefined);
+  const didShowWakeToast = React.useRef(false);
   const browserSupport = getBrowserSupportState();
   const largeTransferWarning = fileTransfer.manifest
     ? getLargeTransferWarning(fileTransfer.manifest.totalBytes)
     : undefined;
   const roomStatusText = getRoomStatusText(currentRoom);
-  const connectionStatusText = getConnectionStatusText(
-    peerConnection.activePeerId,
-    peerConnection.statuses
-  );
   const incomingSenderName =
     getPeerName(currentRoom, peerConnection.incomingOffer?.peerId) ?? "Nearby device";
+
+  const showToast = React.useCallback(
+    (toast: Omit<TransferToast, "id" | "durationMs"> & { durationMs?: number }) => {
+      if (transferToastTimer.current) {
+        window.clearTimeout(transferToastTimer.current);
+      }
+
+      const durationMs = toast.durationMs ?? 3_000;
+      setTransferToast({ ...toast, id: Date.now(), durationMs });
+      transferToastTimer.current = window.setTimeout(() => {
+        setTransferToast(undefined);
+        transferToastTimer.current = undefined;
+      }, durationMs);
+    },
+    []
+  );
+
+  React.useEffect(
+    () => () => {
+      if (transferToastTimer.current) {
+        window.clearTimeout(transferToastTimer.current);
+      }
+    },
+    []
+  );
 
   React.useEffect(() => {
     const savedTheme = window.localStorage.getItem("oppassum.theme");
@@ -285,27 +311,36 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
 
   React.useEffect(() => {
     if (roomState || currentRoom.status === "connected") {
-      setShowWakeNotice(false);
-      setWakeNoticeLong(false);
+      if (didShowWakeToast.current) {
+        showToast({
+          tone: "success",
+          message: "Connection Established"
+        });
+        didShowWakeToast.current = false;
+      }
+
       return undefined;
     }
 
-    const wakeTimer = window.setTimeout(() => setShowWakeNotice(true), 5_000);
-    const longTimer = window.setTimeout(() => {
-      setShowWakeNotice(true);
-      setWakeNoticeLong(true);
-    }, 65_000);
+    const wakeTimer = window.setTimeout(() => {
+      didShowWakeToast.current = true;
+      showToast({
+        tone: "warning",
+        message: "Secure Connection Is Waking Up",
+        detail: "This can take up to 45 seconds.",
+        durationMs: 45_000
+      });
+    }, 5_000);
 
     return () => {
       window.clearTimeout(wakeTimer);
-      window.clearTimeout(longTimer);
     };
-  }, [currentRoom.status, roomState]);
+  }, [currentRoom.status, roomState, showToast]);
 
   React.useEffect(() => {
     const progress = peerConnection.transferProgress;
     const error = peerConnection.transferError;
-    let nextToast: Omit<TransferToast, "id"> | undefined;
+    let nextToast: (Omit<TransferToast, "id" | "durationMs"> & { durationMs?: number }) | undefined;
     let nextKey: string | undefined;
 
     if (error && lastErrorToast.current !== error) {
@@ -340,12 +375,10 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
       lastProgressToastKey.current = nextKey;
     }
 
-    setTransferToast({ ...nextToast, id: Date.now() });
+    showToast(nextToast);
 
-    const timer = window.setTimeout(() => setTransferToast(undefined), 3_000);
-
-    return () => window.clearTimeout(timer);
-  }, [peerConnection.transferError, peerConnection.transferProgress]);
+    return undefined;
+  }, [peerConnection.transferError, peerConnection.transferProgress, showToast]);
 
   const saveDeviceName = React.useCallback(() => {
     currentRoom.updateDeviceName?.(deviceNameDraft);
@@ -371,15 +404,17 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const handlePeerSelect = React.useCallback(
     (peer: Peer) => {
       if (!fileTransfer.manifest) {
-        setSelectionPrompt("Select files or a folder first, then choose a device to send.");
-        setSelectionPromptShakeKey((current) => current + 1);
+        showToast({
+          tone: "warning",
+          message: "Select Files First",
+          durationMs: 2_000
+        });
         return;
       }
 
-      setSelectionPrompt(undefined);
       void peerConnection.sendTransferManifest(peer, fileTransfer.manifest, fileTransfer.files);
     },
-    [fileTransfer.files, fileTransfer.manifest, peerConnection]
+    [fileTransfer.files, fileTransfer.manifest, peerConnection, showToast]
   );
 
   const hasSurfaceActivity = Boolean(
@@ -390,8 +425,6 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     peerConnection.transferProgress ||
     peerConnection.outgoingStatus ||
     peerConnection.receivedFiles.length > 0 ||
-    selectionPrompt ||
-    showWakeNotice ||
     largeTransferWarning ||
     !browserSupport.isSupported
   );
@@ -452,15 +485,20 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
       <section
         className={`relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-center px-5 pt-2 sm:px-8 md:pt-8 ${
           hasSurfaceActivity
-            ? "min-h-[calc(100svh-88px)] pb-6"
-            : "h-[calc(100svh-88px)] min-h-0 pb-0"
+            ? "min-h-[calc(100svh-128px)] pb-6"
+            : "h-[calc(100svh-128px)] min-h-0 pb-0"
         }`}
       >
         {currentRoom.peers.slice(0, peerPositions.length).map((peer, index) => (
           <DevicePeerCard
             key={peer.peerId}
             name={peer.displayName}
-            status={getPeerStatusLabel(peerConnection.statuses[peer.peerId])}
+            status={getPeerStatusLabel(
+              peer.peerId,
+              peerConnection.activePeerId,
+              peerConnection.statuses[peer.peerId],
+              peerConnection.transferProgress
+            )}
             kind={toDeviceKind(peer.deviceType)}
             positionClassName={peerPositions[index] ?? peerPositions[0]}
             canSend={Boolean(fileTransfer.manifest)}
@@ -474,7 +512,6 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             selectedCount={fileTransfer.files.length}
             isDragActive={fileTransfer.isDragActive}
             onFilesSelected={(files) => {
-              setSelectionPrompt(undefined);
               fileTransfer.selectFiles(files);
             }}
             onDragActiveChange={fileTransfer.setDragActive}
@@ -493,13 +530,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               The Simpliest Peer to Peer Data Transfer Across Devices
             </p>
             <p className="text-sm font-medium text-[#ff5b38]">{roomStatusText}</p>
-            <p
-              className="min-h-5 text-sm font-semibold text-[#2f9e44]"
-              aria-live="polite"
-              data-testid="webrtc-connection-status"
-            >
-              {connectionStatusText}
-            </p>
+            <p className="text-xs font-medium text-[#6b7280]">{currentRoom.self.displayName}</p>
             {!browserSupport.isSupported && browserSupport.message ? (
               <StatusNotice
                 title="Browser Limited"
@@ -507,45 +538,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 tone="warning"
               />
             ) : null}
-            {showWakeNotice ? (
-              <StatusNotice
-                title={
-                  isWakeNoticeLong
-                    ? "Connection Is Taking Longer Than Expected"
-                    : "Secure Connection Is Waking Up"
-                }
-                detail={
-                  isWakeNoticeLong
-                    ? "Please retry while we keep reconnecting in the background."
-                    : "This can take up to 65 seconds."
-                }
-                tone="warning"
-                action={
-                  isWakeNoticeLong ? (
-                    <button
-                      className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a] focus-visible:ring-offset-2"
-                      type="button"
-                      onClick={currentRoom.reconnect}
-                    >
-                      <RotateCcw aria-hidden="true" className="size-4" />
-                      Retry
-                    </button>
-                  ) : undefined
-                }
-              />
-            ) : null}
             {largeTransferWarning ? (
               <StatusNotice title="Large Transfer" detail={largeTransferWarning} tone="warning" />
-            ) : null}
-            {selectionPrompt ? (
-              <StatusNotice
-                key={selectionPromptShakeKey}
-                title="Select Files First"
-                detail={selectionPrompt}
-                tone="warning"
-                onDismiss={() => setSelectionPrompt(undefined)}
-                isAttention
-              />
             ) : null}
             {fileTransfer.pendingFolderSelection ? (
               <div
@@ -652,7 +646,12 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                   <MobilePeerButton
                     key={peer.peerId}
                     peer={peer}
-                    status={getPeerStatusLabel(peerConnection.statuses[peer.peerId])}
+                    status={getPeerStatusLabel(
+                      peer.peerId,
+                      peerConnection.activePeerId,
+                      peerConnection.statuses[peer.peerId],
+                      peerConnection.transferProgress
+                    )}
                     canSend={Boolean(fileTransfer.manifest)}
                     onSelect={() => handlePeerSelect(peer)}
                   />
@@ -670,7 +669,11 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 detail={getProgressDetail(peerConnection.transferProgress)}
                 value={getTransferPercent(peerConnection.transferProgress)}
                 tone={peerConnection.transferProgress.direction === "receiving" ? "green" : "blue"}
-                onDismiss={peerConnection.clearTransferProgress}
+                onDismiss={
+                  peerConnection.transferProgress.status === "transferring"
+                    ? peerConnection.cancelTransferProgress
+                    : peerConnection.clearTransferProgress
+                }
               />
             ) : null}
             {peerConnection.outgoingStatus ? (
@@ -694,7 +697,9 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
                 <button
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-3 text-sm font-semibold text-white outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
                   type="button"
-                  onClick={() => downloadFiles(peerConnection.receivedFiles)}
+                  onClick={() => {
+                    void downloadFiles(peerConnection.receivedFiles);
+                  }}
                 >
                   <Download aria-hidden="true" className="size-4" />
                   Download All
@@ -733,8 +738,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         ) : null}
 
         <div className="sr-only" aria-live="polite">
-          Drag-over state active. File selected. Sending progress. Receiving progress. Peer
-          Disconnected mid-transfer.
+          Drag-over state active. File selected. Sending progress. Receiving progress.
         </div>
       </section>
 
@@ -793,17 +797,56 @@ function MobilePeerButton({
   );
 }
 
-function downloadFiles(files: ReceivedTransferFile[]): void {
-  for (const file of files) {
-    const link = document.createElement("a");
-
-    link.href = file.url;
-    link.download = file.relativePath ?? file.name;
-    link.rel = "noopener";
-    document.body.append(link);
-    link.click();
-    link.remove();
+async function downloadFiles(files: ReceivedTransferFile[]): Promise<void> {
+  if (files.length === 0) {
+    return;
   }
+
+  if (files.length === 1) {
+    const [file] = files;
+
+    if (file) {
+      downloadUrl(file.url, file.relativePath ?? file.name);
+    }
+
+    return;
+  }
+
+  const zipFiles = await Promise.all(
+    files.map(async (receivedFile) => {
+      const response = await fetch(receivedFile.url);
+      const blob = await response.blob();
+      const file = new File([blob], receivedFile.name, {
+        type: receivedFile.type,
+        lastModified: receivedFile.receivedAt
+      });
+
+      if (receivedFile.relativePath) {
+        Object.defineProperty(file, "webkitRelativePath", {
+          configurable: true,
+          value: receivedFile.relativePath
+        });
+      }
+
+      return file;
+    })
+  );
+  const zipFile = await createStoredZipFile(zipFiles, "oppassum-downloads");
+  const zipUrl = URL.createObjectURL(zipFile);
+
+  downloadUrl(zipUrl, zipFile.name);
+  window.setTimeout(() => URL.revokeObjectURL(zipUrl), 30_000);
+}
+
+function downloadUrl(url: string, name: string): void {
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = name;
+  link.rel = "noopener";
+  document.body.append(link);
+  link.click();
+  link.remove();
 }
 
 function InfoOverlay({
@@ -933,73 +976,41 @@ function getProgressTitle(progress: {
   return `${progress.direction === "sending" ? "Sending" : "Receiving"} ${progress.fileName}`;
 }
 
-function getPeerStatusLabel(status: PeerConnectionStatus | undefined): string {
+function getPeerStatusLabel(
+  peerId: string,
+  activePeerId: string | undefined,
+  status: PeerConnectionStatus | undefined,
+  progress: TransferProgressSnapshot | undefined
+): string {
+  if (activePeerId === peerId && progress?.status === "transferring") {
+    return progress.direction === "sending" ? "Sending" : "Receiving";
+  }
+
   if (status === "connecting") {
-    return "Connecting";
-  }
-
-  if (status === "data-channel-open") {
-    return "Data Channel Open";
-  }
-
-  if (status === "failed") {
-    return "Connection Failed";
-  }
-
-  if (status === "disconnected") {
-    return "Disconnected";
+    return "Preparing";
   }
 
   return "Ready";
 }
 
-function getConnectionStatusText(
-  activePeerId: string | undefined,
-  statuses: Record<string, PeerConnectionStatus>
-): string {
-  if (!activePeerId) {
-    return "";
-  }
-
-  const status = statuses[activePeerId];
-
-  if (status === "connecting") {
-    return "Creating secure peer connection...";
-  }
-
-  if (status === "data-channel-open") {
-    return "Data Channel Open";
-  }
-
-  if (status === "failed") {
-    return "Peer connection failed";
-  }
-
-  if (status === "disconnected") {
-    return "Peer Disconnected";
-  }
-
-  return "";
-}
-
 function getRoomStatusText(roomState: SocketRoomState): string {
   if (roomState.status === "connecting") {
-    return "Connecting to nearby devices...";
+    return "Finding Nearby Devices...";
   }
 
   if (roomState.status === "error") {
-    return roomState.errorMessage ?? "Could not connect to the signaling server.";
+    return "Finding Nearby Devices...";
   }
 
   if (roomState.status === "disconnected") {
-    return "Disconnected from the signaling server.";
+    return "Finding Nearby Devices...";
   }
 
   if (roomState.peers.length === 0) {
-    return "No Devices Connected Yet";
+    return "No Device Nearby";
   }
 
-  return `${roomState.peers.length} ${roomState.peers.length === 1 ? "Device" : "Devices"} Connected`;
+  return `${roomState.peers.length} ${roomState.peers.length === 1 ? "Device" : "Devices"} Nearby`;
 }
 
 function toDeviceKind(
@@ -1072,27 +1083,32 @@ function StatusNotice({
 }
 
 function TransferOutcomeToast({ toast }: { toast: TransferToast }) {
-  const isSuccess = toast.tone === "success";
+  const icon =
+    toast.tone === "success" ? (
+      <svg aria-hidden="true" className="size-6 shrink-0 fill-[#4caf50]" viewBox="0 0 24 24">
+        <path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+      </svg>
+    ) : toast.tone === "warning" ? (
+      <AlertTriangle aria-hidden="true" className="size-6 shrink-0 text-[#b7791f]" />
+    ) : (
+      <X aria-hidden="true" className="size-6 shrink-0 text-[#c92a2a]" />
+    );
 
   return (
     <div
       key={toast.id}
-      className={`transfer-toast fixed left-1/2 top-[10%] z-[80] flex h-[50px] w-[50px] -translate-x-1/2 items-center justify-start overflow-hidden rounded-full bg-white shadow-[0_8px_24px_rgba(32,33,36,0.16)] ${
-        isSuccess ? "transfer-toast-success" : "transfer-toast-error"
-      }`}
+      className="transfer-toast fixed left-1/2 top-[10%] z-[80] flex min-h-[50px] w-[50px] -translate-x-1/2 items-center justify-start overflow-hidden rounded-full bg-white shadow-[0_8px_24px_rgba(32,33,36,0.16)]"
       role="status"
       aria-live="polite"
+      style={{ "--toast-duration": `${toast.durationMs}ms` } as React.CSSProperties}
     >
       <div className="flex w-full items-center whitespace-nowrap pl-[13px]">
-        {isSuccess ? (
-          <svg aria-hidden="true" className="size-6 shrink-0 fill-[#4caf50]" viewBox="0 0 24 24">
-            <path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-          </svg>
-        ) : (
-          <X aria-hidden="true" className="size-6 shrink-0 text-[#c92a2a]" />
-        )}
-        <span className="transfer-toast-text ml-2.5 text-sm font-bold text-[#202124]">
-          {toast.message}
+        {icon}
+        <span className="transfer-toast-text ml-2.5 grid gap-0.5 text-sm font-bold text-[#202124]">
+          <span>{toast.message}</span>
+          {toast.detail ? (
+            <span className="text-xs font-semibold text-[#6b7280]">{toast.detail}</span>
+          ) : null}
         </span>
       </div>
     </div>

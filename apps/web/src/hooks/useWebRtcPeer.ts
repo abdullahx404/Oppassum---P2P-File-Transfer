@@ -39,6 +39,7 @@ export type PeerConnectionSnapshot = {
   clearReceivedFiles: () => void;
   clearTransferError: () => void;
   clearTransferProgress: () => void;
+  cancelTransferProgress: () => void;
   connectToPeer: (peer: Peer) => Promise<void>;
   sendTransferManifest: (peer: Peer, manifest: TransferManifest, files: File[]) => Promise<void>;
   retryLastTransfer: () => Promise<void>;
@@ -74,7 +75,8 @@ type ControlMessage =
   | { kind: "transfer-rejected"; transferId: string }
   | { kind: "file-start"; transferId: string; fileId: string }
   | { kind: "file-complete"; transferId: string; fileId: string }
-  | { kind: "transfer-complete"; transferId: string };
+  | { kind: "transfer-complete"; transferId: string }
+  | { kind: "transfer-cancelled"; transferId: string };
 
 type PendingOutgoingTransfer = {
   peer: Peer;
@@ -108,6 +110,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
   const pendingOutgoingTransfers = useRef(new Map<string, PendingOutgoingTransfer>());
   const receivingTransfers = useRef(new Map<string, ActiveReceivingTransfer>());
   const lastOutgoingTransfer = useRef<PendingOutgoingTransfer | undefined>(undefined);
+  const cancelledTransfers = useRef(new Set<string>());
   const receivedFileUrls = useRef<string[]>([]);
   const [statuses, setStatuses] = useState<Record<string, PeerConnectionStatus>>({});
   const [activePeerId, setActivePeerId] = useState<string | undefined>();
@@ -202,9 +205,8 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
         setTimeout(() => {
           setPeerStatus(peerId, "failed");
           failPeerTransfers(peerId, {
-            title: "Connection timed out",
-            detail:
-              "The peer connection did not open in time. Check that both devices are online and retry.",
+            title: "Transfer Failed",
+            detail: "The transfer connection did not open in time. Check both devices and retry.",
             canRetry: true
           });
         }, CONNECTION_TIMEOUT_MS)
@@ -276,6 +278,10 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
 
     try {
       for (const [index, file] of files.entries()) {
+        if (cancelledTransfers.current.has(transferId)) {
+          throw new Error("Transfer cancelled");
+        }
+
         const metadata = manifest.files[index];
 
         if (!metadata) {
@@ -291,7 +297,15 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
         );
 
         for await (const chunk of readFileChunks(file, DEFAULT_CHUNK_SIZE)) {
+          if (cancelledTransfers.current.has(transferId)) {
+            throw new Error("Transfer cancelled");
+          }
+
           await waitForDataChannelBackpressure(channel);
+          if (cancelledTransfers.current.has(transferId)) {
+            throw new Error("Transfer cancelled");
+          }
+
           channel.send(chunk);
           bytesSent += chunk.byteLength;
           setTransferProgress(
@@ -339,9 +353,13 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
       );
       pendingOutgoingTransfers.current.delete(transferId);
     } catch {
+      const wasCancelled = cancelledTransfers.current.has(transferId);
+      cancelledTransfers.current.delete(transferId);
       setTransferError({
-        title: "Transfer interrupted",
-        detail: "The file stream stopped before completion. Keep both devices open and retry.",
+        title: "Transfer Failed",
+        detail: wasCancelled
+          ? "The transfer was stopped before completion."
+          : "The file stream stopped before completion. Keep both devices open and retry.",
         canRetry: true
       });
       setTransferProgress(
@@ -357,6 +375,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
           startedAt
         })
       );
+      pendingOutgoingTransfers.current.delete(transferId);
     }
   }, []);
 
@@ -520,6 +539,32 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
         );
         receivingTransfers.current.delete(message.transferId);
       }
+
+      if (message.kind === "transfer-cancelled") {
+        const receivingTransfer = receivingTransfers.current.get(message.transferId);
+
+        if (!receivingTransfer) {
+          return;
+        }
+
+        setTransferProgress({
+          direction: "receiving",
+          status: "failed",
+          transferId: message.transferId,
+          fileName: receivingTransfer.currentFile?.metadata.name ?? "Incoming transfer",
+          bytesTransferred: receivingTransfer.receivedBytes,
+          totalBytes: receivingTransfer.manifest.totalBytes,
+          completedFiles: receivingTransfer.completedFiles,
+          totalFiles: receivingTransfer.manifest.files.length,
+          startedAt: receivingTransfer.startedAt
+        });
+        setTransferError({
+          title: "Transfer Failed",
+          detail: "The sender stopped this transfer before it completed.",
+          canRetry: false
+        });
+        receivingTransfers.current.delete(message.transferId);
+      }
     },
     [handleBinaryChunk, sendTransferChunks]
   );
@@ -543,8 +588,8 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
         },
         () => {
           failPeerTransfers(peerId, {
-            title: "Peer connection closed",
-            detail: "The browser data channel closed before the transfer finished.",
+            title: "Transfer Failed",
+            detail: "The transfer stopped before it finished. You can try again.",
             canRetry: true
           });
           setPeerStatus(peerId, "disconnected");
@@ -579,8 +624,8 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
             clearConnectionTimeout(peerId);
             setPeerStatus(peerId, "failed");
             failPeerTransfers(peerId, {
-              title: "Peer connection failed",
-              detail: "The secure peer connection failed before the transfer completed.",
+              title: "Transfer Failed",
+              detail: "The transfer stopped before it finished. You can try again.",
               canRetry: true
             });
           }
@@ -588,8 +633,8 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
           if (state === "disconnected") {
             setPeerStatus(peerId, "disconnected");
             failPeerTransfers(peerId, {
-              title: "Peer Disconnected",
-              detail: "The other device disconnected before the transfer completed.",
+              title: "Transfer Failed",
+              detail: "The other device left before the transfer completed.",
               canRetry: true
             });
           }
@@ -749,6 +794,48 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     setOutgoingStatus(undefined);
   }, []);
 
+  const cancelTransferProgress = useCallback(() => {
+    setTransferProgress((current) => {
+      if (!current || current.status !== "transferring") {
+        return undefined;
+      }
+
+      cancelledTransfers.current.add(current.transferId);
+
+      const outgoingTransfer = pendingOutgoingTransfers.current.get(current.transferId);
+      if (outgoingTransfer) {
+        const channel = sessions.current.get(outgoingTransfer.peerId)?.channel;
+
+        if (channel?.readyState === "open") {
+          channel.send(
+            JSON.stringify({
+              kind: "transfer-cancelled",
+              transferId: current.transferId
+            } satisfies ControlMessage)
+          );
+        }
+      }
+
+      const receivingTransfer = receivingTransfers.current.get(current.transferId);
+      if (receivingTransfer) {
+        receivingTransfers.current.delete(current.transferId);
+      }
+
+      pendingOutgoingTransfers.current.delete(current.transferId);
+      setOutgoingStatus(undefined);
+      setTransferError({
+        title: "Transfer Failed",
+        detail: "The transfer was stopped before completion.",
+        canRetry: true
+      });
+
+      return {
+        ...current,
+        status: "failed"
+      };
+    });
+  }, []);
+
   useEffect(() => {
     const socket = roomState.socket;
 
@@ -813,8 +900,8 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     for (const [peerId, session] of sessions.current) {
       if (!knownPeerIds.has(peerId)) {
         failPeerTransfers(peerId, {
-          title: "Peer Disconnected",
-          detail: "The other device left the room before the transfer completed.",
+          title: "Transfer Failed",
+          detail: "The other device left before the transfer completed.",
           canRetry: true
         });
         session.channel?.close();
@@ -856,6 +943,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     clearReceivedFiles,
     clearTransferError,
     clearTransferProgress,
+    cancelTransferProgress,
     connectToPeer,
     sendTransferManifest,
     retryLastTransfer,
@@ -874,7 +962,8 @@ function parseControlMessage(rawMessage: string): ControlMessage | undefined {
       parsed.kind === "transfer-rejected" ||
       parsed.kind === "file-start" ||
       parsed.kind === "file-complete" ||
-      parsed.kind === "transfer-complete"
+      parsed.kind === "transfer-complete" ||
+      parsed.kind === "transfer-cancelled"
     ) {
       return parsed;
     }

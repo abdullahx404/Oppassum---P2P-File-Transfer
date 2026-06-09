@@ -23,7 +23,9 @@ describe("TransferSurface", () => {
   it("shows discovered peers without demo transfer state cards", () => {
     render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
-    expect(screen.getAllByRole("button", { name: "Studio Laptop, Ready" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Studio Laptop, Ready" }).length).toBeGreaterThan(
+      0
+    );
     expect(screen.getAllByRole("button", { name: "Amina Phone, Ready" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("Receiver selected")).not.toBeInTheDocument();
     expect(screen.queryByText("Connection Failed")).not.toBeInTheDocument();
@@ -48,7 +50,9 @@ describe("TransferSurface", () => {
     render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
     expect(screen.queryByText("Design assets")).not.toBeInTheDocument();
-    expect(screen.queryByRole("progressbar", { name: "Sending portfolio.zip" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("progressbar", { name: "Sending portfolio.zip" })
+    ).not.toBeInTheDocument();
     render(React.createElement(TransferDialog, { manifest, onAccept: vi.fn(), onReject: vi.fn() }));
     expect(screen.getByLabelText("Incoming transfer preview")).toBeInTheDocument();
     expect(screen.getByText("brand-kit.zip")).toBeInTheDocument();
@@ -63,17 +67,17 @@ describe("TransferSurface", () => {
       })
     );
 
-    expect(screen.getByText("Connecting to nearby devices...")).toBeInTheDocument();
+    expect(screen.getByText("Finding Nearby Devices...")).toBeInTheDocument();
 
     rerender(
       React.createElement(TransferSurface, {
         roomState: createFallbackRoomState({ status: "connected", peers: [] })
       })
     );
-    expect(screen.getByText("No Devices Connected Yet")).toBeInTheDocument();
+    expect(screen.getByText("No Device Nearby")).toBeInTheDocument();
 
     rerender(React.createElement(TransferSurface, { roomState: previewRoomState }));
-    expect(screen.getByText("4 Devices Connected")).toBeInTheDocument();
+    expect(screen.getByText("4 Devices Nearby")).toBeInTheDocument();
   });
 
   it("shows selected file manifest metadata", () => {
@@ -90,7 +94,9 @@ describe("TransferSurface", () => {
 
     expect(screen.getByLabelText("Selected file manifest")).toBeInTheDocument();
     expect(screen.getByText("1 File Selected")).toBeInTheDocument();
-    expect(screen.getByText(/hello.txt - 5 B ready to share. Click Send on a device to share with./)).toBeInTheDocument();
+    expect(
+      screen.getByText(/hello.txt - 5 B ready to share. Click Send on a device to share with./)
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Send").length).toBeGreaterThan(0);
   });
 
@@ -121,7 +127,7 @@ describe("TransferSurface", () => {
     });
   });
 
-  it("asks users to select files before choosing a device", () => {
+  it("asks users to select files before choosing a device", async () => {
     render(React.createElement(TransferSurface, { roomState: previewRoomState }));
 
     const studioLaptopButtons = screen.getAllByRole("button", { name: "Studio Laptop, Ready" });
@@ -129,10 +135,9 @@ describe("TransferSurface", () => {
     expect(studioLaptopButtons[0]).toBeDefined();
     fireEvent.click(studioLaptopButtons[0] as HTMLElement);
 
-    expect(screen.getByText("Select Files First")).toBeInTheDocument();
-    expect(
-      screen.getByText("Select files or a folder first, then choose a device to send.")
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Select Files First")).toBeInTheDocument();
+    });
   });
 
   it("renders user-controlled names as text without executing markup", () => {
@@ -181,7 +186,9 @@ describe("TransferSurface", () => {
       })
     );
 
-    expect(screen.getAllByText("<img src=x onerror=window.__oppassumXss=1>").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("<img src=x onerror=window.__oppassumXss=1>").length
+    ).toBeGreaterThan(0);
     expect(screen.getByText("<script>window.__oppassumXss=1</script>.txt")).toBeInTheDocument();
     expect(testWindow.__oppassumXss).toBeUndefined();
   });

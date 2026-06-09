@@ -47,6 +47,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/oppassum-logo.png",
     apple: "/oppassum-logo.png"
+  },
+  verification: {
+    google: "raUp56p0iH380Bul7djoVgsp5Hw_Ya1gUc6hXjrxknk"
   }
 };
 
