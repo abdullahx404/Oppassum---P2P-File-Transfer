@@ -85,51 +85,59 @@ label {
 
 .info-expand {
   animation: info-expand 1000ms cubic-bezier(0.22, 1, 0.36, 1);
-  transform-origin: calc(100% - 2rem) 2rem;
+  transform-origin: var(--info-origin-x) var(--info-origin-y);
 }
 
 .info-collapse {
   animation: info-collapse 1000ms cubic-bezier(0.64, 0, 0.78, 0) forwards;
-  transform-origin: calc(100% - 2rem) 2rem;
+  transform-origin: var(--info-origin-x) var(--info-origin-y);
 }
 
 .info-close-icon {
   animation: info-close-fade 500ms ease 500ms both;
 }
 
-.header-control-icon {
-  stroke: url("#header-control-gradient");
+.header-control-icon,
+.header-control-icon * {
+  stroke: url("#header-control-gradient") !important;
+  transition: stroke 160ms ease;
 }
 
-.header-control:hover .header-control-icon {
-  stroke: #ffffff;
+.header-control:hover .header-control-icon,
+.header-control:hover .header-control-icon * {
+  stroke: #ffffff !important;
+}
+
+.info-panel {
+  --info-origin-x: calc(100% - 2.5rem);
+  --info-origin-y: 2.5rem;
 }
 
 @keyframes info-expand {
   0% {
-    clip-path: circle(1.5rem at calc(100% - 2.5rem) 3rem);
+    clip-path: circle(1.5rem at var(--info-origin-x) var(--info-origin-y));
     opacity: 0.92;
   }
 
   100% {
-    clip-path: circle(125vmax at calc(100% - 2.5rem) 3rem);
+    clip-path: circle(125vmax at var(--info-origin-x) var(--info-origin-y));
     opacity: 1;
   }
 }
 
 @keyframes info-collapse {
   0% {
-    clip-path: circle(125vmax at calc(100% - 2.5rem) 3rem);
+    clip-path: circle(125vmax at var(--info-origin-x) var(--info-origin-y));
     opacity: 1;
   }
 
   15% {
-    clip-path: circle(80vmax at calc(100% - 2.5rem) 3rem);
+    clip-path: circle(80vmax at var(--info-origin-x) var(--info-origin-y));
     opacity: 1;
   }
 
   100% {
-    clip-path: circle(1.5rem at calc(100% - 2.5rem) 3rem);
+    clip-path: circle(1.5rem at var(--info-origin-x) var(--info-origin-y));
     opacity: 0.92;
   }
 }
@@ -170,6 +178,10 @@ label {
 @media (min-width: 640px) {
   .radar-rings {
     top: 7rem;
+  }
+
+  .info-panel {
+    --info-origin-x: calc(100% - 3.25rem);
   }
 }
 
@@ -229,6 +241,14 @@ label {
 .theme-dark [class*="ring-[#ffe0cf]"],
 .theme-dark [class*="ring-[#ffd6c2]"] {
   --tw-ring-color: #ffe0cf !important;
+}
+
+.theme-dark .header-control {
+  background: rgba(11, 13, 18, 0.78) !important;
+}
+
+.theme-dark .header-control:hover {
+  background: linear-gradient(135deg, #f2055c, #ff7a1a, #ffb000) !important;
 }
 
 .theme-dark .radar-rings span {
