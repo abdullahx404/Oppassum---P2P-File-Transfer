@@ -88,6 +88,11 @@ label {
   transform-origin: calc(100% - 2rem) 2rem;
 }
 
+.info-collapse {
+  animation: info-collapse 380ms cubic-bezier(0.64, 0, 0.78, 0) forwards;
+  transform-origin: calc(100% - 2rem) 2rem;
+}
+
 @keyframes info-expand {
   0% {
     clip-path: circle(1.5rem at calc(100% - 2.5rem) 3rem);
@@ -97,6 +102,18 @@ label {
   100% {
     clip-path: circle(150% at calc(100% - 2.5rem) 3rem);
     opacity: 1;
+  }
+}
+
+@keyframes info-collapse {
+  0% {
+    clip-path: circle(150% at calc(100% - 2.5rem) 3rem);
+    opacity: 1;
+  }
+
+  100% {
+    clip-path: circle(1.5rem at calc(100% - 2.5rem) 3rem);
+    opacity: 0.92;
   }
 }
 
@@ -182,6 +199,25 @@ label {
   --tw-ring-color: rgba(255, 255, 255, 0.12) !important;
 }
 
+.theme-dark [class*="ring-[#ffe0cf]"],
+.theme-dark [class*="ring-[#ffd6c2]"] {
+  --tw-ring-color: #ffe0cf !important;
+}
+
 .theme-dark .radar-rings span {
   border-color: rgba(255, 122, 26, 0.16);
+}
+
+.theme-dark .info-panel,
+.theme-dark .info-panel [class*="bg-white"] {
+  color: #ffffff !important;
+}
+
+.theme-dark .info-panel [class*="bg-white/"] {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.theme-dark .info-panel button[class*="bg-white"] {
+  background-color: #ffffff !important;
+  color: #ff5b38 !important;
 }

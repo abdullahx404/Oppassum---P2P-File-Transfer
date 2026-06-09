@@ -76,6 +76,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const peerConnection = useWebRtcPeer(currentRoom);
   const fileTransfer = useFileTransfer();
   const [isInfoOpen, setInfoOpen] = React.useState(false);
+  const [isInfoClosing, setInfoClosing] = React.useState(false);
   const [theme, setTheme] = React.useState<"light" | "dark">("light");
   const [deviceNameDraft, setDeviceNameDraft] = React.useState(currentRoom.self.displayName);
   const [selectionPrompt, setSelectionPrompt] = React.useState<string | undefined>();
@@ -136,6 +137,19 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
   }, []);
 
+  const openInfo = React.useCallback(() => {
+    setInfoClosing(false);
+    setInfoOpen(true);
+  }, []);
+
+  const closeInfo = React.useCallback(() => {
+    setInfoClosing(true);
+    window.setTimeout(() => {
+      setInfoOpen(false);
+      setInfoClosing(false);
+    }, 380);
+  }, []);
+
   const handlePeerSelect = React.useCallback(
     (peer: Peer) => {
       if (!fileTransfer.manifest) {
@@ -151,42 +165,56 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   );
 
   return (
-    <main className={`relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124] ${theme === "dark" ? "theme-dark" : ""}`}>
-      <header className="relative z-20 flex items-center justify-between gap-4 px-5 py-5 sm:px-8">
-        <BrandMark />
+    <main className={`relative h-dvh overflow-hidden bg-[#fbfbfc] text-[#202124] ${theme === "dark" ? "theme-dark" : ""}`}>
+      <header
+        className={`relative flex h-[104px] items-start justify-between gap-4 px-5 py-5 sm:px-8 ${
+          isInfoOpen ? "z-[60]" : "z-20"
+        }`}
+      >
+        <div className={isInfoOpen ? "pointer-events-none opacity-0" : ""}>
+          <BrandMark />
+        </div>
         <div className="relative flex flex-col items-center gap-2">
           <button
-            className="flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+            className={`flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#ff7a1a] ${
+              isInfoOpen ? "fixed right-5 top-5 z-[60] sm:right-8" : ""
+            }`}
             type="button"
-            aria-label="Information"
+            aria-label={isInfoOpen ? "Close information" : "Information"}
             aria-expanded={isInfoOpen}
-            onClick={() => setInfoOpen((current) => !current)}
+            onClick={isInfoOpen ? closeInfo : openInfo}
           >
-            <Info aria-hidden="true" className="size-6" />
+            {isInfoOpen ? (
+              <X aria-hidden="true" className="size-5" />
+            ) : (
+              <Info aria-hidden="true" className="size-6" />
+            )}
           </button>
-          <button
-            className="flex h-7 w-12 items-center rounded-full bg-white/80 p-1 shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
-            type="button"
-            aria-label={theme === "dark" ? "Switch To Light Theme" : "Switch To Dark Theme"}
-            aria-pressed={theme === "dark"}
-            onClick={toggleTheme}
-          >
-            <span
-              className={`flex size-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-white transition ${
-                theme === "dark" ? "translate-x-5" : "translate-x-0"
-              }`}
+          {!isInfoOpen ? (
+            <button
+              className="flex h-7 w-12 items-center rounded-full bg-white/80 p-1 shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+              type="button"
+              aria-label={theme === "dark" ? "Switch To Light Theme" : "Switch To Dark Theme"}
+              aria-pressed={theme === "dark"}
+              onClick={toggleTheme}
             >
-              {theme === "dark" ? (
-                <Moon aria-hidden="true" className="size-3" />
-              ) : (
-                <Sun aria-hidden="true" className="size-3" />
-              )}
-            </span>
-          </button>
+              <span
+                className={`flex size-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-white transition ${
+                  theme === "dark" ? "translate-x-5" : "translate-x-0"
+                }`}
+              >
+                {theme === "dark" ? (
+                  <Moon aria-hidden="true" className="size-3" />
+                ) : (
+                  <Sun aria-hidden="true" className="size-3" />
+                )}
+              </span>
+            </button>
+          ) : null}
           {isInfoOpen ? (
             <InfoOverlay
               deviceNameDraft={deviceNameDraft}
-              onClose={() => setInfoOpen(false)}
+              isClosing={isInfoClosing}
               onDeviceNameChange={setDeviceNameDraft}
               onSaveDeviceName={saveDeviceName}
             />
@@ -194,7 +222,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         </div>
       </header>
 
-      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-[1440px] flex-col items-center px-5 pb-6 pt-2 sm:px-8 md:pt-8">
+      <section className="relative z-10 mx-auto flex h-[calc(100dvh-104px)] min-h-0 w-full max-w-[1440px] flex-col items-center overflow-y-auto px-5 pb-6 pt-2 sm:px-8 md:pt-8">
         {currentRoom.peers.slice(0, peerPositions.length).map((peer, index) => (
           <DevicePeerCard
             key={peer.peerId}
@@ -541,28 +569,22 @@ function downloadFiles(files: ReceivedTransferFile[]): void {
 
 function InfoOverlay({
   deviceNameDraft,
-  onClose,
+  isClosing,
   onDeviceNameChange,
   onSaveDeviceName
 }: {
   deviceNameDraft: string;
-  onClose: () => void;
+  isClosing: boolean;
   onDeviceNameChange: (value: string) => void;
   onSaveDeviceName: () => void;
 }) {
   return (
     <section
-      className="info-expand fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-5 py-8 text-white"
+      className={`info-panel fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] px-5 py-8 text-white ${
+        isClosing ? "info-collapse" : "info-expand"
+      }`}
       aria-label="How to use Oppassum"
     >
-      <button
-        className="absolute right-5 top-5 flex size-11 items-center justify-center rounded-full text-white/80 outline-none transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white"
-        type="button"
-        aria-label="Close information"
-        onClick={onClose}
-      >
-        <X aria-hidden="true" className="size-8" />
-      </button>
       <div className="flex w-full max-w-xl flex-col items-center text-center">
         <img
           src="/oppassum-logo-white.png"
