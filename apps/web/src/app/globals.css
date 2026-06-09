@@ -101,7 +101,15 @@ label {
   transition: stroke 160ms ease;
 }
 
-.header-control:hover .header-control-icon * {
+.header-control:hover,
+.header-control:active,
+.header-control:focus-visible {
+  background: linear-gradient(135deg, #f2055c, #ff7a1a, #ffb000) !important;
+}
+
+.header-control:hover .header-control-icon *,
+.header-control:active .header-control-icon *,
+.header-control:focus-visible .header-control-icon * {
   stroke: #ffffff !important;
 }
 

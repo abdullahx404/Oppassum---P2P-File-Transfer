@@ -235,7 +235,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         <div className="relative flex items-center gap-3">
           {!isInfoOpen ? (
             <button
-              className="header-control flex size-10 cursor-pointer items-center justify-center rounded-full bg-[#ffffff]/70 text-[#3c4043] shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition hover:bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+              className="header-control flex size-10 cursor-pointer items-center justify-center rounded-full bg-[#ffffff]/70 text-[#3c4043] shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
               type="button"
               aria-label={theme === "dark" ? "Switch To Light Theme" : "Switch To Dark Theme"}
               aria-pressed={theme === "dark"}
@@ -252,7 +252,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             className={`flex size-10 cursor-pointer items-center justify-center rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-[#ff7a1a] ${
               isInfoOpen
                 ? "fixed right-5 top-5 z-[60] bg-transparent text-white hover:bg-[rgba(255,255,255,0.14)] hover:ring-1 hover:ring-white/35 sm:right-8"
-                : "header-control bg-[#ffffff]/70 text-[#3c4043] ring-1 ring-[#ffe0cf] hover:bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)]"
+                : "header-control bg-[#ffffff]/70 text-[#3c4043] ring-1 ring-[#ffe0cf]"
             }`}
             type="button"
             aria-label={isInfoOpen ? "Close information" : "Information"}
