@@ -20,7 +20,11 @@ import { ProgressPanel } from "./ProgressPanel";
 import { TransferDialog } from "./TransferDialog";
 import { UploadTarget } from "./UploadTarget";
 import { useFileTransfer } from "../hooks/useFileTransfer";
-import { useWebRtcPeer, type PeerConnectionStatus } from "../hooks/useWebRtcPeer";
+import {
+  useWebRtcPeer,
+  type PeerConnectionStatus,
+  type TransferError
+} from "../hooks/useWebRtcPeer";
 import {
   createFallbackRoomState,
   useSocketRoom,
@@ -249,7 +253,8 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   const [showWakeNotice, setShowWakeNotice] = React.useState(false);
   const [isWakeNoticeLong, setWakeNoticeLong] = React.useState(false);
   const [transferToast, setTransferToast] = React.useState<TransferToast | undefined>();
-  const lastToastKey = React.useRef<string | undefined>(undefined);
+  const lastProgressToastKey = React.useRef<string | undefined>(undefined);
+  const lastErrorToast = React.useRef<TransferError | undefined>(undefined);
   const browserSupport = getBrowserSupportState();
   const largeTransferWarning = fileTransfer.manifest
     ? getLargeTransferWarning(fileTransfer.manifest.totalBytes)
@@ -303,24 +308,38 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     let nextToast: Omit<TransferToast, "id"> | undefined;
     let nextKey: string | undefined;
 
-    if (progress?.status === "completed") {
-      nextToast = { tone: "success", message: "Transfer Completed" };
-      nextKey = `completed:${progress.transferId}:${progress.direction}`;
-    } else if (progress?.status === "failed") {
-      nextToast = { tone: "error", message: "Transfer Failed" };
-      nextKey = `failed:${progress.transferId}:${progress.direction}`;
-    } else if (error) {
+    if (error && lastErrorToast.current !== error) {
       const isRejected = error.title.toLowerCase().includes("rejected");
 
       nextToast = { tone: "error", message: isRejected ? "Transfer Rejected" : "Transfer Failed" };
-      nextKey = `error:${error.title}:${error.detail}`;
+      nextKey = `error:${Date.now()}`;
+      lastErrorToast.current = error;
+    } else if (!error) {
+      lastErrorToast.current = undefined;
     }
 
-    if (!nextToast || !nextKey || lastToastKey.current === nextKey) {
+    if (!nextToast && progress?.status === "completed") {
+      nextToast = { tone: "success", message: "Transfer Completed" };
+      nextKey = `completed:${progress.transferId}:${progress.direction}`;
+    } else if (!nextToast && progress?.status === "failed") {
+      nextToast = { tone: "error", message: "Transfer Failed" };
+      nextKey = `failed:${progress.transferId}:${progress.direction}`;
+    } else if (progress) {
+      lastProgressToastKey.current = undefined;
+    }
+
+    if (!nextToast || !nextKey) {
       return undefined;
     }
 
-    lastToastKey.current = nextKey;
+    if (nextKey.startsWith("completed:") || nextKey.startsWith("failed:")) {
+      if (lastProgressToastKey.current === nextKey) {
+        return undefined;
+      }
+
+      lastProgressToastKey.current = nextKey;
+    }
+
     setTransferToast({ ...nextToast, id: Date.now() });
 
     const timer = window.setTimeout(() => setTransferToast(undefined), 3_000);
@@ -361,6 +380,20 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
       void peerConnection.sendTransferManifest(peer, fileTransfer.manifest, fileTransfer.files);
     },
     [fileTransfer.files, fileTransfer.manifest, peerConnection]
+  );
+
+  const hasSurfaceActivity = Boolean(
+    currentRoom.peers.length > 0 ||
+    fileTransfer.pendingFolderSelection ||
+    fileTransfer.manifest ||
+    peerConnection.transferError ||
+    peerConnection.transferProgress ||
+    peerConnection.outgoingStatus ||
+    peerConnection.receivedFiles.length > 0 ||
+    selectionPrompt ||
+    showWakeNotice ||
+    largeTransferWarning ||
+    !browserSupport.isSupported
   );
 
   return (
@@ -416,7 +449,13 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         </div>
       </header>
 
-      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-[1440px] flex-col items-center px-5 pb-6 pt-2 sm:px-8 md:pt-8">
+      <section
+        className={`relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-center px-5 pt-2 sm:px-8 md:pt-8 ${
+          hasSurfaceActivity
+            ? "min-h-[calc(100svh-88px)] pb-6"
+            : "h-[calc(100svh-88px)] min-h-0 pb-0"
+        }`}
+      >
         {currentRoom.peers.slice(0, peerPositions.length).map((peer, index) => (
           <DevicePeerCard
             key={peer.peerId}

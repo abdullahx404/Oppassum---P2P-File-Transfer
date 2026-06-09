@@ -11,7 +11,7 @@ export function BrandMark() {
         src="/oppassum-logo-raw.png"
         alt=""
         aria-hidden="true"
-        className="size-11 object-contain sm:size-12"
+        className="size-14 object-contain"
       />
       <img src="/oppassum-name.png" alt="Oppassum" className="h-8 w-auto object-contain sm:h-10" />
     </a>

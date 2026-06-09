@@ -203,7 +203,8 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
           setPeerStatus(peerId, "failed");
           failPeerTransfers(peerId, {
             title: "Connection timed out",
-            detail: "The peer connection did not open in time. Check that both devices are online and retry.",
+            detail:
+              "The peer connection did not open in time. Check that both devices are online and retry.",
             canRetry: true
           });
         }, CONNECTION_TIMEOUT_MS)
@@ -412,110 +413,116 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
     );
   }, []);
 
-  const handleControlMessage = useCallback((peerId: string, rawMessage: string) => {
-    if (rawMessage === "oppassum:probe") {
-      return;
-    }
-
-    const message = parseControlMessage(rawMessage);
-
-    if (!message) {
-      return;
-    }
-
-    if (message.kind === "transfer-manifest") {
-      setIncomingOffer({
-        peerId,
-        manifest: message.manifest
-      });
-    }
-
-    if (message.kind === "transfer-accepted") {
-      setTransferError(undefined);
-      setOutgoingStatus((current) =>
-        current?.transferId === message.transferId
-          ? {
-              ...current,
-              status: "accepted"
-            }
-          : current
-      );
-      void sendTransferChunks(peerId, message.transferId);
-    }
-
-    if (message.kind === "transfer-rejected") {
-      setTransferError({
-        title: "Transfer Rejected",
-        detail: "The receiver declined this transfer. You can try again with the same selection.",
-        canRetry: true
-      });
-      setOutgoingStatus((current) =>
-        current?.transferId === message.transferId
-          ? {
-              ...current,
-              status: "rejected"
-            }
-          : current
-      );
-      pendingOutgoingTransfers.current.delete(message.transferId);
-    }
-
-    if (message.kind === "file-start") {
-      const receivingTransfer = receivingTransfers.current.get(message.transferId);
-      const metadata = receivingTransfer?.manifest.files.find((file) => file.id === message.fileId);
-
-      if (!receivingTransfer || !metadata) {
+  const handleControlMessage = useCallback(
+    (peerId: string, rawMessage: string) => {
+      if (rawMessage === "oppassum:probe") {
         return;
       }
 
-      receivingTransfer.currentFile = {
-        metadata,
-        chunks: [],
-        receivedBytes: 0
-      };
-    }
+      const message = parseControlMessage(rawMessage);
 
-    if (message.kind === "file-complete") {
-      const receivingTransfer = receivingTransfers.current.get(message.transferId);
-
-      if (!receivingTransfer?.currentFile) {
+      if (!message) {
         return;
       }
 
-      const receivedFile = createReceivedFileUrl(
-        receivingTransfer.currentFile.metadata,
-        receivingTransfer.currentFile.chunks
-      );
-      receivedFileUrls.current.push(receivedFile.url);
-      receivingTransfer.files.push(receivedFile);
-      receivingTransfer.completedFiles += 1;
-      receivingTransfer.currentFile = undefined;
-      setReceivedFiles((current) => [receivedFile, ...current]);
-    }
-
-    if (message.kind === "transfer-complete") {
-      const receivingTransfer = receivingTransfers.current.get(message.transferId);
-
-      if (!receivingTransfer) {
-        return;
+      if (message.kind === "transfer-manifest") {
+        setIncomingOffer({
+          peerId,
+          manifest: message.manifest
+        });
       }
 
-      setTransferProgress(
-        createTransferProgress({
-          direction: "receiving",
-          status: "completed",
-          transferId: receivingTransfer.manifest.transferId,
-          fileName: receivingTransfer.files[receivingTransfer.files.length - 1]?.name ?? "Transfer",
-          bytesTransferred: receivingTransfer.manifest.totalBytes,
-          totalBytes: receivingTransfer.manifest.totalBytes,
-          completedFiles: receivingTransfer.manifest.files.length,
-          totalFiles: receivingTransfer.manifest.files.length,
-          startedAt: receivingTransfer.startedAt
-        })
-      );
-      receivingTransfers.current.delete(message.transferId);
-    }
-  }, [handleBinaryChunk, sendTransferChunks]);
+      if (message.kind === "transfer-accepted") {
+        setTransferError(undefined);
+        setOutgoingStatus((current) =>
+          current?.transferId === message.transferId
+            ? {
+                ...current,
+                status: "accepted"
+              }
+            : current
+        );
+        void sendTransferChunks(peerId, message.transferId);
+      }
+
+      if (message.kind === "transfer-rejected") {
+        setTransferError({
+          title: "Transfer Rejected",
+          detail: "The receiver declined this transfer. You can try again with the same selection.",
+          canRetry: true
+        });
+        setOutgoingStatus((current) =>
+          current?.transferId === message.transferId
+            ? {
+                ...current,
+                status: "rejected"
+              }
+            : current
+        );
+        pendingOutgoingTransfers.current.delete(message.transferId);
+      }
+
+      if (message.kind === "file-start") {
+        const receivingTransfer = receivingTransfers.current.get(message.transferId);
+        const metadata = receivingTransfer?.manifest.files.find(
+          (file) => file.id === message.fileId
+        );
+
+        if (!receivingTransfer || !metadata) {
+          return;
+        }
+
+        receivingTransfer.currentFile = {
+          metadata,
+          chunks: [],
+          receivedBytes: 0
+        };
+      }
+
+      if (message.kind === "file-complete") {
+        const receivingTransfer = receivingTransfers.current.get(message.transferId);
+
+        if (!receivingTransfer?.currentFile) {
+          return;
+        }
+
+        const receivedFile = createReceivedFileUrl(
+          receivingTransfer.currentFile.metadata,
+          receivingTransfer.currentFile.chunks
+        );
+        receivedFileUrls.current.push(receivedFile.url);
+        receivingTransfer.files.push(receivedFile);
+        receivingTransfer.completedFiles += 1;
+        receivingTransfer.currentFile = undefined;
+        setReceivedFiles((current) => [receivedFile, ...current]);
+      }
+
+      if (message.kind === "transfer-complete") {
+        const receivingTransfer = receivingTransfers.current.get(message.transferId);
+
+        if (!receivingTransfer) {
+          return;
+        }
+
+        setTransferProgress(
+          createTransferProgress({
+            direction: "receiving",
+            status: "completed",
+            transferId: receivingTransfer.manifest.transferId,
+            fileName:
+              receivingTransfer.files[receivingTransfer.files.length - 1]?.name ?? "Transfer",
+            bytesTransferred: receivingTransfer.manifest.totalBytes,
+            totalBytes: receivingTransfer.manifest.totalBytes,
+            completedFiles: receivingTransfer.manifest.files.length,
+            totalFiles: receivingTransfer.manifest.files.length,
+            startedAt: receivingTransfer.startedAt
+          })
+        );
+        receivingTransfers.current.delete(message.transferId);
+      }
+    },
+    [handleBinaryChunk, sendTransferChunks]
+  );
 
   const attachControlChannel = useCallback(
     (peerId: string, channel: RTCDataChannel): RTCDataChannel =>
@@ -543,7 +550,13 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
           setPeerStatus(peerId, "disconnected");
         }
       ),
-    [clearConnectionTimeout, failPeerTransfers, handleBinaryChunk, handleControlMessage, setPeerStatus]
+    [
+      clearConnectionTimeout,
+      failPeerTransfers,
+      handleBinaryChunk,
+      handleControlMessage,
+      setPeerStatus
+    ]
   );
 
   const createSession = useCallback(
@@ -666,6 +679,7 @@ export function useWebRtcPeer(roomState: SocketRoomState): PeerConnectionSnapsho
       pendingOutgoingTransfers.current.set(manifest.transferId, outgoingTransfer);
       lastOutgoingTransfer.current = outgoingTransfer;
       setTransferError(undefined);
+      setTransferProgress(undefined);
 
       setOutgoingStatus({
         peerId: peer.peerId,
