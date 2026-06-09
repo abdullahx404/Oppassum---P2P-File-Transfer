@@ -5,13 +5,10 @@ import {
   AlertTriangle,
   Download,
   HelpCircle,
-  Info,
   Laptop,
   Monitor,
-  Moon,
   RotateCcw,
   Smartphone,
-  Sun,
   Tablet,
   X
 } from "lucide-react";
@@ -43,6 +40,67 @@ const peerPositions = [
   "left-[31%] top-[55%]",
   "left-[69%] top-[55%]"
 ] as const;
+
+function HeaderSunIcon() {
+  return (
+    <svg aria-hidden="true" className="header-control-icon size-5" fill="none" viewBox="0 0 24 24">
+      <defs>
+        <linearGradient id="header-sun-gradient" x1="3" x2="21" y1="3" y2="21" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#f2055c" />
+          <stop offset="0.56" stopColor="#ff5b38" />
+          <stop offset="1" stopColor="#ffb000" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="4" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="M12 2v2" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="M12 20v2" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="m4.93 4.93 1.41 1.41" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="m17.66 17.66 1.41 1.41" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="M2 12h2" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="M20 12h2" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="m6.34 17.66-1.41 1.41" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="m19.07 4.93-1.41 1.41" stroke="url(#header-sun-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+function HeaderMoonIcon() {
+  return (
+    <svg aria-hidden="true" className="header-control-icon size-5" fill="none" viewBox="0 0 24 24">
+      <defs>
+        <linearGradient id="header-moon-gradient" x1="4" x2="20" y1="3" y2="21" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#f2055c" />
+          <stop offset="0.56" stopColor="#ff5b38" />
+          <stop offset="1" stopColor="#ffb000" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M20.9 14.4A8.5 8.5 0 0 1 9.6 3.1 8.7 8.7 0 1 0 20.9 14.4Z"
+        stroke="url(#header-moon-gradient)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+    </svg>
+  );
+}
+
+function HeaderInfoIcon() {
+  return (
+    <svg aria-hidden="true" className="header-control-icon size-6" fill="none" viewBox="0 0 24 24">
+      <defs>
+        <linearGradient id="header-info-gradient" x1="3" x2="21" y1="3" y2="21" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#f2055c" />
+          <stop offset="0.56" stopColor="#ff5b38" />
+          <stop offset="1" stopColor="#ffb000" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="9" stroke="url(#header-info-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" />
+      <path d="M12 11v5" stroke="url(#header-info-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" />
+      <path d="M12 8h.01" stroke="url(#header-info-gradient)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
+    </svg>
+  );
+}
 
 const mobileDeviceIcons = {
   laptop: Laptop,
@@ -166,15 +224,6 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
 
   return (
     <main className={`relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124] ${theme === "dark" ? "theme-dark" : ""}`}>
-      <svg aria-hidden="true" className="pointer-events-none absolute size-0">
-        <defs>
-          <linearGradient id="header-control-gradient" x1="0%" x2="100%" y1="0%" y2="100%">
-            <stop offset="0%" stopColor="#f2055c" />
-            <stop offset="56%" stopColor="#ff5b38" />
-            <stop offset="100%" stopColor="#ffb000" />
-          </linearGradient>
-        </defs>
-      </svg>
       <header
         className={`relative flex items-center justify-between gap-4 px-5 py-5 sm:px-8 ${
           isInfoOpen ? "z-[60]" : "z-20"
@@ -193,9 +242,9 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               onClick={toggleTheme}
             >
               {theme === "dark" ? (
-                <Moon aria-hidden="true" className="header-control-icon size-5" />
+                <HeaderMoonIcon />
               ) : (
-                <Sun aria-hidden="true" className="header-control-icon size-5" />
+                <HeaderSunIcon />
               )}
             </button>
           ) : null}
@@ -213,7 +262,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             {isInfoOpen ? (
               <X aria-hidden="true" className="info-close-icon size-5" />
             ) : (
-              <Info aria-hidden="true" className="header-control-icon size-6" />
+              <HeaderInfoIcon />
             )}
           </button>
           {isInfoOpen ? (
