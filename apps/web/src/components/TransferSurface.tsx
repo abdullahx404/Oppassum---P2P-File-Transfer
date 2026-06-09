@@ -147,7 +147,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
     window.setTimeout(() => {
       setInfoOpen(false);
       setInfoClosing(false);
-    }, 380);
+    }, 1500);
   }, []);
 
   const handlePeerSelect = React.useCallback(
@@ -174,31 +174,27 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         <div className={isInfoOpen ? "pointer-events-none opacity-0" : ""}>
           <BrandMark />
         </div>
-        <div className="relative flex items-center gap-2">
+        <div className="relative flex items-center gap-3">
           {!isInfoOpen ? (
             <button
-              className="flex h-7 w-12 items-center rounded-full bg-white/80 p-1 shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
+              className="flex size-10 cursor-pointer items-center justify-center rounded-full bg-white/70 text-[#3c4043] shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition hover:bg-[#f1f3f4]/70 focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
               type="button"
               aria-label={theme === "dark" ? "Switch To Light Theme" : "Switch To Dark Theme"}
               aria-pressed={theme === "dark"}
               onClick={toggleTheme}
             >
-              <span
-                className={`flex size-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f2055c,#ff7a1a,#ffb000)] text-white transition ${
-                  theme === "dark" ? "translate-x-5" : "translate-x-0"
-                }`}
-              >
-                {theme === "dark" ? (
-                  <Moon aria-hidden="true" className="size-3" />
-                ) : (
-                  <Sun aria-hidden="true" className="size-3" />
-                )}
-              </span>
+              {theme === "dark" ? (
+                <Moon aria-hidden="true" className="size-5" />
+              ) : (
+                <Sun aria-hidden="true" className="size-5" />
+              )}
             </button>
           ) : null}
           <button
-            className={`flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#ff7a1a] ${
-              isInfoOpen ? "fixed right-5 top-5 z-[60] sm:right-8" : ""
+            className={`flex size-10 cursor-pointer items-center justify-center rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-[#ff7a1a] ${
+              isInfoOpen
+                ? "fixed right-5 top-5 z-[60] bg-transparent text-white hover:bg-white/10 hover:ring-1 hover:ring-white/35 sm:right-8"
+                : "bg-white/70 text-[#3c4043] ring-1 ring-[#ffe0cf] hover:bg-[#f1f3f4]/70"
             }`}
             type="button"
             aria-label={isInfoOpen ? "Close information" : "Information"}
@@ -206,7 +202,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
             onClick={isInfoOpen ? closeInfo : openInfo}
           >
             {isInfoOpen ? (
-              <X aria-hidden="true" className="size-5" />
+              <X aria-hidden="true" className="info-close-icon size-5" />
             ) : (
               <Info aria-hidden="true" className="size-6" />
             )}
