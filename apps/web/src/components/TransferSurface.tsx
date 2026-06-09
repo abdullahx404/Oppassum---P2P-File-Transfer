@@ -165,31 +165,16 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
   );
 
   return (
-    <main className={`relative h-dvh overflow-hidden bg-[#fbfbfc] text-[#202124] ${theme === "dark" ? "theme-dark" : ""}`}>
+    <main className={`relative min-h-screen overflow-hidden bg-[#fbfbfc] text-[#202124] ${theme === "dark" ? "theme-dark" : ""}`}>
       <header
-        className={`relative flex h-[104px] items-start justify-between gap-4 px-5 py-5 sm:px-8 ${
+        className={`relative flex items-center justify-between gap-4 px-5 py-5 sm:px-8 ${
           isInfoOpen ? "z-[60]" : "z-20"
         }`}
       >
         <div className={isInfoOpen ? "pointer-events-none opacity-0" : ""}>
           <BrandMark />
         </div>
-        <div className="relative flex flex-col items-center gap-2">
-          <button
-            className={`flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#ff7a1a] ${
-              isInfoOpen ? "fixed right-5 top-5 z-[60] sm:right-8" : ""
-            }`}
-            type="button"
-            aria-label={isInfoOpen ? "Close information" : "Information"}
-            aria-expanded={isInfoOpen}
-            onClick={isInfoOpen ? closeInfo : openInfo}
-          >
-            {isInfoOpen ? (
-              <X aria-hidden="true" className="size-5" />
-            ) : (
-              <Info aria-hidden="true" className="size-6" />
-            )}
-          </button>
+        <div className="relative flex items-center gap-2">
           {!isInfoOpen ? (
             <button
               className="flex h-7 w-12 items-center rounded-full bg-white/80 p-1 shadow-[0_8px_24px_rgba(32,33,36,0.08)] ring-1 ring-[#ffe0cf] outline-none transition focus-visible:ring-2 focus-visible:ring-[#ff7a1a]"
@@ -211,6 +196,21 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
               </span>
             </button>
           ) : null}
+          <button
+            className={`flex size-10 items-center justify-center rounded-full bg-white/70 text-[#3c4043] outline-none ring-1 ring-[#ffe0cf] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#ff7a1a] ${
+              isInfoOpen ? "fixed right-5 top-5 z-[60] sm:right-8" : ""
+            }`}
+            type="button"
+            aria-label={isInfoOpen ? "Close information" : "Information"}
+            aria-expanded={isInfoOpen}
+            onClick={isInfoOpen ? closeInfo : openInfo}
+          >
+            {isInfoOpen ? (
+              <X aria-hidden="true" className="size-5" />
+            ) : (
+              <Info aria-hidden="true" className="size-6" />
+            )}
+          </button>
           {isInfoOpen ? (
             <InfoOverlay
               deviceNameDraft={deviceNameDraft}
@@ -222,7 +222,7 @@ export function TransferSurface({ roomState }: TransferSurfaceProps) {
         </div>
       </header>
 
-      <section className="relative z-10 mx-auto flex h-[calc(100dvh-104px)] min-h-0 w-full max-w-[1440px] flex-col items-center overflow-y-auto px-5 pb-6 pt-2 sm:px-8 md:pt-8">
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-[1440px] flex-col items-center px-5 pb-6 pt-2 sm:px-8 md:pt-8">
         {currentRoom.peers.slice(0, peerPositions.length).map((peer, index) => (
           <DevicePeerCard
             key={peer.peerId}
