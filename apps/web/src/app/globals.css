@@ -89,11 +89,8 @@ label {
 }
 
 .info-collapse {
-  animation: info-reveal 1000ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  clip-path: none;
-  mask-repeat: no-repeat;
+  animation: info-collapse 1000ms ease-in-out forwards;
   transform-origin: var(--info-origin-x) var(--info-origin-y);
-  -webkit-mask-repeat: no-repeat;
 }
 
 .info-close-icon {
@@ -125,17 +122,15 @@ label {
   }
 }
 
-@keyframes info-reveal {
+@keyframes info-collapse {
   0% {
-    mask-image: radial-gradient(circle at var(--info-origin-x) var(--info-origin-y), transparent 0, transparent 0, #000 0.1rem);
+    clip-path: circle(125vmax at var(--info-origin-x) var(--info-origin-y));
     opacity: 1;
-    -webkit-mask-image: radial-gradient(circle at var(--info-origin-x) var(--info-origin-y), transparent 0, transparent 0, #000 0.1rem);
   }
 
   100% {
-    mask-image: radial-gradient(circle at var(--info-origin-x) var(--info-origin-y), transparent 0, transparent 125vmax, #000 125vmax);
+    clip-path: circle(0 at var(--info-origin-x) var(--info-origin-y));
     opacity: 1;
-    -webkit-mask-image: radial-gradient(circle at var(--info-origin-x) var(--info-origin-y), transparent 0, transparent 125vmax, #000 125vmax);
   }
 }
 
