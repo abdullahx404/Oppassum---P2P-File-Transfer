@@ -5,26 +5,47 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://oppassum.vercel.app"),
-  title: "Oppassum",
-  description: "P2P file sharing over the WiFi.",
+  title: {
+    default: "Oppassum - P2P WiFi File Sharing",
+    template: "%s | Oppassum"
+  },
+  description:
+    "Oppassum is a browser-based P2P file sharing app for transferring files directly across devices over WiFi.",
   applicationName: "Oppassum",
   keywords: [
     "Oppassum",
+    "Oppassum file sharing",
+    "Oppassum P2P",
     "P2P file sharing",
+    "P2P WiFi file sharing",
     "WiFi file sharing",
     "peer to peer transfer",
     "browser file transfer",
-    "WebRTC file sharing"
+    "WebRTC file sharing",
+    "local network file transfer"
   ],
   authors: [{ name: "Abdullah Zia" }],
   creator: "Abdullah Zia",
   publisher: "Oppassum",
+  manifest: "/manifest.webmanifest",
   alternates: {
     canonical: "/"
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1
+    }
+  },
   openGraph: {
-    title: "Oppassum",
-    description: "P2P file sharing over the WiFi.",
+    title: "Oppassum - P2P WiFi File Sharing",
+    description:
+      "Browser-based P2P file sharing for transferring files directly across devices over WiFi.",
     url: "/",
     siteName: "Oppassum",
     images: [
@@ -40,7 +61,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Oppassum",
+    title: "Oppassum - P2P WiFi File Sharing",
     description: "P2P file sharing over the WiFi.",
     images: ["/oppassum-logo.png"]
   },
