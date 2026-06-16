@@ -209,7 +209,6 @@ label {
 
   to {
     width: min(var(--toast-width), calc(100vw - 2rem));
-    padding-right: 20px;
   }
 }
 
@@ -236,12 +235,10 @@ label {
 @keyframes transfer-toast-shrink {
   from {
     width: min(var(--toast-width), calc(100vw - 2rem));
-    padding-right: 20px;
   }
 
   to {
     width: 50px;
-    padding-right: 0;
   }
 }
 

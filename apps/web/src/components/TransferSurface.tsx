@@ -1141,7 +1141,7 @@ function TransferOutcomeToast({ toast }: { toast: TransferToast }) {
   return (
     <div
       key={toast.id}
-      className="transfer-toast fixed left-1/2 top-[10%] z-[80] flex min-h-[50px] w-[50px] -translate-x-1/2 items-center justify-start overflow-hidden rounded-full bg-white shadow-[0_8px_24px_rgba(32,33,36,0.16)]"
+      className="transfer-toast fixed left-1/2 top-[10%] z-[80] flex min-h-[50px] w-[50px] -translate-x-1/2 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_8px_24px_rgba(32,33,36,0.16)]"
       role="status"
       aria-live="polite"
       style={
@@ -1153,7 +1153,7 @@ function TransferOutcomeToast({ toast }: { toast: TransferToast }) {
     >
       <div className="flex w-max items-center justify-center whitespace-nowrap px-[13px]">
         {icon}
-        <span className="transfer-toast-text ml-2.5 grid gap-0.5 text-sm font-bold text-[#202124]">
+        <span className="transfer-toast-text ml-2.5 grid gap-0.5 text-center text-sm font-bold text-[#202124]">
           <span>{toast.message}</span>
           {toast.detail ? (
             <span className="text-xs font-semibold text-[#6b7280]">{toast.detail}</span>
